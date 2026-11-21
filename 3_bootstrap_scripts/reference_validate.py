@@ -99,7 +99,9 @@ def local_script_module_exists(file_path: Path, module: str | None) -> bool:
         if rel_pkg.is_file():
             return True
     if top == "migrations" and file_path.parent.name == "3_bootstrap_scripts":
-        return (REPO_ROOT / "3_bootstrap_scripts" / "migrations" / "__init__.py").is_file()
+        return (
+            REPO_ROOT / "3_bootstrap_scripts" / "migrations" / "__init__.py"
+        ).is_file()
     return False
 
 
@@ -119,9 +121,26 @@ def stdlib_modules() -> set[str]:
     if hasattr(sys, "stdlib_module_names"):
         return set(sys.stdlib_module_names)
     return {
-        "os", "sys", "pathlib", "json", "re", "subprocess", "typing", "datetime",
-        "uuid", "ast", "importlib", "argparse", "collections", "functools", "unittest",
-        "math", "hashlib", "dataclasses", "tempfile", "itertools",
+        "os",
+        "sys",
+        "pathlib",
+        "json",
+        "re",
+        "subprocess",
+        "typing",
+        "datetime",
+        "uuid",
+        "ast",
+        "importlib",
+        "argparse",
+        "collections",
+        "functools",
+        "unittest",
+        "math",
+        "hashlib",
+        "dataclasses",
+        "tempfile",
+        "itertools",
     }
 
 
@@ -133,16 +152,32 @@ def get_target_files() -> tuple[list[Path], bool]:
             ["git", "diff", "--name-only", "HEAD~1...HEAD"],
         ):
             try:
-                r = subprocess.run(cmd, capture_output=True, text=True, timeout=30, check=False, cwd=REPO_ROOT)
+                r = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                    cwd=REPO_ROOT,
+                )
                 if r.returncode == 0:
                     rels = [p for p in (r.stdout or "").splitlines() if p.strip()]
                     if rels:
-                        files = [REPO_ROOT / p for p in rels if p.endswith(".py") and (REPO_ROOT / p).is_file()]
+                        files = [
+                            REPO_ROOT / p
+                            for p in rels
+                            if p.endswith(".py") and (REPO_ROOT / p).is_file()
+                        ]
                         return sorted(files), True
             except subprocess.TimeoutExpired:
                 continue
     files: list[Path] = []
-    for root in (REPO_ROOT / "backend", REPO_ROOT / "agentic", REPO_ROOT / "tests", REPO_ROOT / "3_bootstrap_scripts"):
+    for root in (
+        REPO_ROOT / "backend",
+        REPO_ROOT / "agentic",
+        REPO_ROOT / "tests",
+        REPO_ROOT / "3_bootstrap_scripts",
+    ):
         if root.is_dir():
             files.extend(root.rglob("*.py"))
     return sorted(files), False
@@ -177,7 +212,9 @@ def resolve_relative(file_path: Path, module: str | None, level: int) -> str | N
     return ".".join(base)
 
 
-def check_imports(file_path: Path, requirements: set[str], stdlib: set[str]) -> list[str]:
+def check_imports(
+    file_path: Path, requirements: set[str], stdlib: set[str]
+) -> list[str]:
     errors: list[str] = []
     try:
         tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
@@ -199,7 +236,9 @@ def check_imports(file_path: Path, requirements: set[str], stdlib: set[str]) -> 
             resolved = resolve_relative(file_path, node.module, node.level)
             if resolved and module_to_path(resolved):
                 continue
-            top = (resolved or node.module or "").split(".")[0].lower().replace("-", "_")
+            top = (
+                (resolved or node.module or "").split(".")[0].lower().replace("-", "_")
+            )
             if top in stdlib or requirement_covers(top, requirements):
                 continue
             if local_script_module_exists(file_path, resolved or node.module):

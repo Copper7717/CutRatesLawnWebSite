@@ -29,7 +29,9 @@ def get_migration(version: str):
 
 def list_available_migrations() -> list[str]:
     """List all available migration versions."""
-    return sorted(ALL_MIGRATIONS.keys(), key=lambda v: tuple(int(p) for p in v.split(".")))
+    return sorted(
+        ALL_MIGRATIONS.keys(), key=lambda v: tuple(int(p) for p in v.split("."))
+    )
 
 
 __all__ = ["get_migration", "list_available_migrations", "ALL_MIGRATIONS"]

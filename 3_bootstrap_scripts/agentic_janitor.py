@@ -38,7 +38,9 @@ def main() -> int:
         return 0
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="Report actions without executing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Report actions without executing"
+    )
     args = parser.parse_args()
 
     if not janitor_guard_enter():
@@ -67,7 +69,10 @@ def main() -> int:
 
         if is_tool_enabled("doc_lifecycle"):
             from agentic.docs_lifecycle import refresh_human_docs  # noqa: E402
-            from agentic.doc_governance import sync_archive_readme, sync_documentation_index  # noqa: E402
+            from agentic.doc_governance import (
+                sync_archive_readme,
+                sync_documentation_index,
+            )  # noqa: E402
 
             for doc_action in refresh_human_docs(REPO_ROOT):
                 actions.append(doc_action)

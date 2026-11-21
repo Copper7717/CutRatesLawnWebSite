@@ -87,7 +87,9 @@ def list_tools(root: pathlib.Path | None = None) -> list[dict[str, Any]]:
     return out
 
 
-def save_optional_tools(tools: dict[str, bool], root: pathlib.Path | None = None) -> None:
+def save_optional_tools(
+    tools: dict[str, bool], root: pathlib.Path | None = None
+) -> None:
     root = root or REPO_ROOT
     path = root / "0_phase0_bootstrap" / "feature_flags.yml"
     flags = load_feature_flags(root)
@@ -102,4 +104,6 @@ def save_optional_tools(tools: dict[str, bool], root: pathlib.Path | None = None
         else:
             optional[tool_id] = {"enabled": enabled}
     with open(path, "w", encoding="utf-8") as handle:
-        yaml.dump(flags, handle, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        yaml.dump(
+            flags, handle, default_flow_style=False, sort_keys=False, allow_unicode=True
+        )

@@ -118,8 +118,15 @@ def render_active_docs_table(active: list[DocMeta]) -> str:
 
 
 def render_archive_table(archived: list[DocMeta]) -> str:
-    lines = ["| Archived doc | Date | Superseded by |", "|-------------|------|----------------|"]
-    rows = [m for m in archived if m.status == "archived" and not m.path.endswith("README.md")]
+    lines = [
+        "| Archived doc | Date | Superseded by |",
+        "|-------------|------|----------------|",
+    ]
+    rows = [
+        m
+        for m in archived
+        if m.status == "archived" and not m.path.endswith("README.md")
+    ]
     if not rows:
         lines.append("| *(none yet)* | — | — |")
     else:
@@ -204,7 +211,9 @@ def validate_doc_governance(root: pathlib.Path | None = None) -> list[str]:
         if meta.superseded_by:
             target = (root / meta.superseded_by).resolve()
             if not target.exists():
-                errors.append(f"{rel}: superseded_by target missing -> {meta.superseded_by}")
+                errors.append(
+                    f"{rel}: superseded_by target missing -> {meta.superseded_by}"
+                )
 
     for path in collect_docs(root):
         rel = str(path.relative_to(root)).replace("\\", "/")
@@ -218,7 +227,13 @@ def validate_doc_governance(root: pathlib.Path | None = None) -> list[str]:
             target = match.group(1).strip()
             if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
-            if target in ("path", "doc", "new-doc", "path/to/file.md", "../relative/path.md"):
+            if target in (
+                "path",
+                "doc",
+                "new-doc",
+                "path/to/file.md",
+                "../relative/path.md",
+            ):
                 continue
             if "FILE.md" in target or "FILE.json" in target:
                 continue
@@ -239,12 +254,16 @@ def validate_doc_governance(root: pathlib.Path | None = None) -> list[str]:
             if rel.endswith("MASTER_INDEX.md"):
                 continue
             if rel not in master_text and pathlib.Path(rel).name not in master_text:
-                errors.append(f"{rel}: missing from docs/MASTER_INDEX.md (onboarding chain)")
+                errors.append(
+                    f"{rel}: missing from docs/MASTER_INDEX.md (onboarding chain)"
+                )
 
     return errors
 
 
-def archive_document(source_rel: str, superseded_by: str, root: pathlib.Path | None = None) -> pathlib.Path:
+def archive_document(
+    source_rel: str, superseded_by: str, root: pathlib.Path | None = None
+) -> pathlib.Path:
     root = root or REPO_ROOT
     source = root / source_rel
     if not source.exists():
@@ -258,7 +277,9 @@ def archive_document(source_rel: str, superseded_by: str, root: pathlib.Path | N
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     original = source.read_text(encoding="utf-8")
-    header = f"> **Archived on** {today}. Superseded by [successor]({superseded_by}).\n\n"
+    header = (
+        f"> **Archived on** {today}. Superseded by [successor]({superseded_by}).\n\n"
+    )
     dest.write_text(header + original, encoding="utf-8")
     source.unlink()
 
@@ -267,7 +288,9 @@ def archive_document(source_rel: str, superseded_by: str, root: pathlib.Path | N
     return dest
 
 
-def deprecate_document(source_rel: str, superseded_by: str, root: pathlib.Path | None = None) -> None:
+def deprecate_document(
+    source_rel: str, superseded_by: str, root: pathlib.Path | None = None
+) -> None:
     root = root or REPO_ROOT
     source = root / source_rel
     if not source.exists():

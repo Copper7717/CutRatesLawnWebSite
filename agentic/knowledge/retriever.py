@@ -5,7 +5,12 @@ from __future__ import annotations
 import pathlib
 from typing import Any
 
-from agentic.knowledge.bm25_index import BM25Index, KnowledgeChunk, SearchHit, chunk_text
+from agentic.knowledge.bm25_index import (
+    BM25Index,
+    KnowledgeChunk,
+    SearchHit,
+    chunk_text,
+)
 from agentic.registry import load_knowledge_sources
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -56,7 +61,9 @@ def build_index(root: pathlib.Path | None = None) -> BM25Index:
 def default_index_path(root: pathlib.Path | None = None) -> pathlib.Path:
     root = root or REPO_ROOT
     sources_cfg = load_knowledge_sources(root)
-    rel = (sources_cfg.get("index") or {}).get("output_dir", "6_ai_runtime_context/knowledge_index")
+    rel = (sources_cfg.get("index") or {}).get(
+        "output_dir", "6_ai_runtime_context/knowledge_index"
+    )
     return root / rel / "index.json"
 
 

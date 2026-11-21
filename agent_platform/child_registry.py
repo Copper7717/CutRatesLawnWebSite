@@ -39,9 +39,15 @@ def save_registry(root: pathlib.Path, data: dict[str, Any]) -> None:
         yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)
 
 
-def register_child(root: pathlib.Path, record: ChildRepositoryRecord) -> ChildRepositoryRecord:
+def register_child(
+    root: pathlib.Path, record: ChildRepositoryRecord
+) -> ChildRepositoryRecord:
     data = load_registry(root)
-    children = [c for c in (data.get("children") or []) if c.get("repository_id") != record.repository_id]
+    children = [
+        c
+        for c in (data.get("children") or [])
+        if c.get("repository_id") != record.repository_id
+    ]
     children.append(record.to_dict())
     data["children"] = children
     data["updated_at"] = utc_now()
@@ -59,11 +65,15 @@ def child_status(root: pathlib.Path, repository_id: str) -> dict[str, Any]:
             target = pathlib.Path(child.get("repository_location", ""))
             status = dict(child)
             status["exists"] = target.exists()
-            status["declared_initializer_version"] = child.get("initializer_version", "")
+            status["declared_initializer_version"] = child.get(
+                "initializer_version", ""
+            )
             status["hub_initializer_version"] = read_template_version(root)
             status["compatible"] = (
-                status["declared_initializer_version"] == status["hub_initializer_version"]
-                if status["declared_initializer_version"] and status["hub_initializer_version"]
+                status["declared_initializer_version"]
+                == status["hub_initializer_version"]
+                if status["declared_initializer_version"]
+                and status["hub_initializer_version"]
                 else None
             )
             return status

@@ -11,7 +11,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from pre_commit_utils import MAX_FILE_SIZE, files_from_argv_or_staged, norm_path, run_subprocess  # noqa: E402
+from pre_commit_utils import (
+    MAX_FILE_SIZE,
+    files_from_argv_or_staged,
+    norm_path,
+    run_subprocess,
+)  # noqa: E402
 
 SECRET_PATTERN = re.compile(
     r"(AWS_SECRET|BEGIN RSA PRIVATE KEY|password\s*=|api_key\s*=)",
@@ -47,7 +52,10 @@ def main() -> int:
             print(f"  - {hit}")
         return 1
 
-    if os.environ.get("RUN_NPM_AUDIT") == "1" and Path("frontend/package.json").is_file():
+    if (
+        os.environ.get("RUN_NPM_AUDIT") == "1"
+        and Path("frontend/package.json").is_file()
+    ):
         audit = run_subprocess(
             ["npm", "audit", "--audit-level=high"],
             cwd="frontend",

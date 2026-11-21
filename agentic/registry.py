@@ -40,7 +40,9 @@ def load_agent_registry(root: pathlib.Path | None = None) -> dict[str, Any]:
 
 def load_workspace_spine(root: pathlib.Path | None = None) -> dict[str, Any]:
     root = root or REPO_ROOT
-    return _load_yaml(root / "5_reference_architectures" / "WORKSPACE_SPINE_REGISTRY.yaml")
+    return _load_yaml(
+        root / "5_reference_architectures" / "WORKSPACE_SPINE_REGISTRY.yaml"
+    )
 
 
 def load_knowledge_sources(root: pathlib.Path | None = None) -> dict[str, Any]:
@@ -56,7 +58,9 @@ def parse_decision_rows(registry: dict[str, Any]) -> list[DecisionRow]:
     return rows
 
 
-def active_resurrection_keywords(registry: dict[str, Any] | None = None) -> list[tuple[str, str, str]]:
+def active_resurrection_keywords(
+    registry: dict[str, Any] | None = None
+) -> list[tuple[str, str, str]]:
     """Return (decision_id, keyword, status) for decisions that block resurrection."""
     registry = registry or load_decision_registry()
     out: list[tuple[str, str, str]] = []

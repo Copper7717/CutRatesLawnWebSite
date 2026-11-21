@@ -16,7 +16,9 @@ except ImportError:
     print("[workspace-spine] ERROR: PyYAML and jsonschema required")
     sys.exit(1)
 
-REGISTRY_PATH = REPO_ROOT / "5_reference_architectures" / "WORKSPACE_SPINE_REGISTRY.yaml"
+REGISTRY_PATH = (
+    REPO_ROOT / "5_reference_architectures" / "WORKSPACE_SPINE_REGISTRY.yaml"
+)
 SCHEMA_PATH = REPO_ROOT / "7_schemas" / "workspace_spine.schema.json"
 
 
@@ -65,7 +67,9 @@ def main() -> int:
             print(f"  - {err}")
         return 1
 
-    print(f"[workspace-spine] OK: {len(data.get('registries') or [])} registry(ies) cataloged")
+    print(
+        f"[workspace-spine] OK: {len(data.get('registries') or [])} registry(ies) cataloged"
+    )
     return 0
 
 

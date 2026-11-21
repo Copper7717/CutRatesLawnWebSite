@@ -11,7 +11,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from pre_commit_utils import MAX_FILE_SIZE, files_from_argv_or_staged, norm_path  # noqa: E402
+from pre_commit_utils import (
+    MAX_FILE_SIZE,
+    files_from_argv_or_staged,
+    norm_path,
+)  # noqa: E402
 
 try:
     import yaml

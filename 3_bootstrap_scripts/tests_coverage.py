@@ -35,8 +35,12 @@ def load_thresholds() -> dict:
         components = flags.get("components", {})
         gates = flags.get("gates", {})
         return {
-            "backend_threshold": components.get("backend", {}).get("coverage_threshold", 100),
-            "frontend_threshold": components.get("frontend", {}).get("coverage_threshold", 95),
+            "backend_threshold": components.get("backend", {}).get(
+                "coverage_threshold", 100
+            ),
+            "frontend_threshold": components.get("frontend", {}).get(
+                "coverage_threshold", 95
+            ),
             "block_on_coverage": gates.get("block_on_coverage_drop", True),
         }
     except Exception:
@@ -77,8 +81,13 @@ def main() -> int:
         else:
             report = Path("coverage-backend.json")
             if report.exists():
-                covered = json.loads(report.read_text(encoding="utf-8"))["totals"]["percent_covered"]
-                if covered < thresholds["backend_threshold"] and thresholds["block_on_coverage"]:
+                covered = json.loads(report.read_text(encoding="utf-8"))["totals"][
+                    "percent_covered"
+                ]
+                if (
+                    covered < thresholds["backend_threshold"]
+                    and thresholds["block_on_coverage"]
+                ):
                     print(
                         f"[coverage] Backend coverage {covered}% below threshold "
                         f"{thresholds['backend_threshold']}%"
@@ -86,7 +95,9 @@ def main() -> int:
                     status = 1
 
     if Path("frontend/package.json").is_file():
-        npm_ci = run_subprocess(["npm", "ci", "--silent"], cwd="frontend", timeout=PIP_TIMEOUT)
+        npm_ci = run_subprocess(
+            ["npm", "ci", "--silent"], cwd="frontend", timeout=PIP_TIMEOUT
+        )
         if npm_ci.returncode != 0:
             status = 1
         else:

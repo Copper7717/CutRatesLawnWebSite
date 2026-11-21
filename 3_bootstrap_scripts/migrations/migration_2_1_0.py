@@ -121,7 +121,9 @@ def migrate_to_2_1_0(project_root: pathlib.Path) -> Tuple[bool, str]:
         except Exception as exc:
             return False, f"Failed to update version manifest: {exc}"
 
-    return True, "; ".join(notes) if notes else "Migration to v2.1.0 completed successfully"
+    return True, (
+        "; ".join(notes) if notes else "Migration to v2.1.0 completed successfully"
+    )
 
 
 MIGRATIONS = {

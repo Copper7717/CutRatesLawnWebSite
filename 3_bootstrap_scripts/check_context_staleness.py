@@ -16,10 +16,14 @@ sys.path.insert(0, str(REPO_ROOT))
 
 
 def main() -> int:
-    no_stage = "--no-stage" in sys.argv or os.environ.get("CONTEXT_STALENESS_NO_STAGE") == "1"
+    no_stage = (
+        "--no-stage" in sys.argv or os.environ.get("CONTEXT_STALENESS_NO_STAGE") == "1"
+    )
     context_file = REPO_ROOT / "6_ai_runtime_context" / "AI_CONTEXT.md"
     if not context_file.exists():
-        print("[context-staleness] INFO: AI_CONTEXT.md not found, will be generated on next commit")
+        print(
+            "[context-staleness] INFO: AI_CONTEXT.md not found, will be generated on next commit"
+        )
         return 0
 
     try:
@@ -36,7 +40,11 @@ def main() -> int:
             if regenerate_context(REPO_ROOT) == 0:
                 print("[context-staleness] OK: Regenerated AI_CONTEXT.md")
                 if not no_stage:
-                    subprocess.run(["git", "add", str(context_file)], capture_output=True, timeout=30)
+                    subprocess.run(
+                        ["git", "add", str(context_file)],
+                        capture_output=True,
+                        timeout=30,
+                    )
                 return 0
             return 1
     except ImportError:
@@ -65,7 +73,9 @@ def main() -> int:
     )
     if result.returncode == 0:
         if not no_stage:
-            subprocess.run(["git", "add", str(context_file)], capture_output=True, timeout=30)
+            subprocess.run(
+                ["git", "add", str(context_file)], capture_output=True, timeout=30
+            )
         return 0
     print(f"[context-staleness] ERROR: {result.stderr}")
     return 1

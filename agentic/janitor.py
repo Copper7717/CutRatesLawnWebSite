@@ -60,7 +60,10 @@ def is_context_stale(root: pathlib.Path | None = None) -> tuple[bool, str]:
         return True, "AI_CONTEXT.md missing"
 
     try:
-        from agentic.context_fingerprint import compute_context_fingerprint, parse_context_fingerprint
+        from agentic.context_fingerprint import (
+            compute_context_fingerprint,
+            parse_context_fingerprint,
+        )
 
         text = context_file.read_text(encoding="utf-8", errors="replace")
         embedded = parse_context_fingerprint(text)
@@ -91,7 +94,9 @@ def knowledge_index_path(root: pathlib.Path | None = None) -> pathlib.Path:
         if cfg_path.exists():
             with open(cfg_path, encoding="utf-8") as handle:
                 data = yaml.safe_load(handle) or {}
-            rel = (data.get("index") or {}).get("output_dir", "6_ai_runtime_context/knowledge_index")
+            rel = (data.get("index") or {}).get(
+                "output_dir", "6_ai_runtime_context/knowledge_index"
+            )
             return root / rel / "index.json"
     except Exception:
         pass
@@ -152,7 +157,10 @@ def regenerate_context(root: pathlib.Path | None = None) -> int:
 def rebuild_knowledge_index(root: pathlib.Path | None = None) -> int:
     root = root or REPO_ROOT
     result = subprocess.run(
-        [sys.executable, str(root / "3_bootstrap_scripts" / "knowledge_index_build.py")],
+        [
+            sys.executable,
+            str(root / "3_bootstrap_scripts" / "knowledge_index_build.py"),
+        ],
         cwd=root,
         capture_output=True,
         text=True,
@@ -163,7 +171,9 @@ def rebuild_knowledge_index(root: pathlib.Path | None = None) -> int:
     return result.returncode
 
 
-def trim_run_log(max_runs: int = 200, keep: int = 100, root: pathlib.Path | None = None) -> bool:
+def trim_run_log(
+    max_runs: int = 200, keep: int = 100, root: pathlib.Path | None = None
+) -> bool:
     root = root or REPO_ROOT
     log_path = root / "6_ai_runtime_context" / "AGENTIC_RUN_LOG.yaml"
     if not log_path.exists():

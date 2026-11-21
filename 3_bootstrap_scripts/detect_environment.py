@@ -15,6 +15,7 @@ from enum import Enum
 
 class Environment(Enum):
     """Development environment types."""
+
     WINDOWS_CMD = "windows_cmd"
     WINDOWS_POWERSHELL = "windows_powershell"
     WSL = "wsl"
@@ -44,13 +45,14 @@ class EnvironmentDetector:
             # Check PowerShell
             try:
                 subprocess.run(
-                    ["pwsh", "--version"],
-                    capture_output=True,
-                    check=True,
-                    timeout=5
+                    ["pwsh", "--version"], capture_output=True, check=True, timeout=5
                 )
                 return Environment.WINDOWS_POWERSHELL
-            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            except (
+                subprocess.CalledProcessError,
+                FileNotFoundError,
+                subprocess.TimeoutExpired,
+            ):
                 return Environment.WINDOWS_CMD
 
         elif system == "linux":
@@ -129,13 +131,19 @@ class EnvironmentDetector:
 
     def get_path_separator(self) -> str:
         """Get the correct path separator for this environment."""
-        if self.detected_env in [Environment.WINDOWS_CMD, Environment.WINDOWS_POWERSHELL]:
+        if self.detected_env in [
+            Environment.WINDOWS_CMD,
+            Environment.WINDOWS_POWERSHELL,
+        ]:
             return "\\"
         return "/"
 
     def normalize_path(self, path: str) -> str:
         """Normalize path for this environment."""
-        if self.detected_env in [Environment.WINDOWS_CMD, Environment.WINDOWS_POWERSHELL]:
+        if self.detected_env in [
+            Environment.WINDOWS_CMD,
+            Environment.WINDOWS_POWERSHELL,
+        ]:
             return path.replace("/", "\\")
         return path.replace("\\", "/")
 
@@ -177,4 +185,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

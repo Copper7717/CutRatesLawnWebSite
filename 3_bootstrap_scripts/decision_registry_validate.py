@@ -40,7 +40,9 @@ def load_registry(path: pathlib.Path) -> dict:
 
 def dump_registry(path: pathlib.Path, data: dict) -> None:
     """Write registry YAML with a stable header comment."""
-    body = yaml.safe_dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    body = yaml.safe_dump(
+        data, default_flow_style=False, sort_keys=False, allow_unicode=True
+    )
     header = (
         "# Machine-checkable ADR registry — source of truth for settled and open decisions.\n"
         "# Customize rows for your project. Edits require decision_registry_validate.py --propose.\n"
@@ -79,9 +81,11 @@ def validate_logic(data: dict) -> list[str]:
             errors.append(f"{decision_id}: invalid status '{status}'")
 
         supersedes = row.get("supersedes")
-        if supersedes and supersedes not in ids and supersedes not in {
-            d.get("decision_id") for d in decisions
-        }:
+        if (
+            supersedes
+            and supersedes not in ids
+            and supersedes not in {d.get("decision_id") for d in decisions}
+        ):
             errors.append(f"{decision_id}: supersedes unknown id '{supersedes}'")
 
         keywords = row.get("resurrection_trigger_keywords") or []
@@ -163,9 +167,13 @@ def main() -> int:
         print(f"[decision-registry] wrote {REGISTRY_PATH.as_posix()}")
 
     suffix = " (dry-run)" if args.propose and args.dry_run else ""
-    print(f"[decision-registry] OK: {len(data.get('decisions') or [])} decision(s){suffix}")
+    print(
+        f"[decision-registry] OK: {len(data.get('decisions') or [])} decision(s){suffix}"
+    )
     if wrote:
-        print("[decision-registry] proposer applied row — do not hand-edit the registry")
+        print(
+            "[decision-registry] proposer applied row — do not hand-edit the registry"
+        )
     return 0
 
 

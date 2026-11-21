@@ -45,23 +45,27 @@ def migrate_to_1_7_0(project_root: pathlib.Path) -> Tuple[bool, str]:
         "task_completion_gate.py",
         "append_state_transition.py",
         "auto_advance_state.py",
-        "check_state_transition.py"
+        "check_state_transition.py",
     ]
-    
+
     scripts_dir = project_root / "3_bootstrap_scripts"
     for script_name in required_scripts:
         script_path = scripts_dir / script_name
         if script_path.exists():
             notes.append(f"{script_name} verified")
         else:
-            errors.append(f"{script_name} missing - will be installed by template update")
+            errors.append(
+                f"{script_name} missing - will be installed by template update"
+            )
 
     # 4. Verify schema exists
     schema_path = project_root / "7_schemas" / "state_transition_log.schema.json"
     if schema_path.exists():
         notes.append("state_transition_log.schema.json verified")
     else:
-        errors.append("state_transition_log.schema.json missing - will be installed by template update")
+        errors.append(
+            "state_transition_log.schema.json missing - will be installed by template update"
+        )
 
     # 5. Update feature flags if needed (no new flags required, but verify structure)
     feature_flags_path = project_root / "0_phase0_bootstrap" / "feature_flags.yml"
@@ -79,11 +83,12 @@ def migrate_to_1_7_0(project_root: pathlib.Path) -> Tuple[bool, str]:
     generate_script = project_root / "3_bootstrap_scripts" / "generate_ai_context.py"
     if generate_script.exists():
         import subprocess
+
         result = subprocess.run(
             ["python3", str(generate_script)],
             cwd=str(project_root),
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             notes.append("AI_CONTEXT.md regenerated with auto-advance protocol")
@@ -97,15 +102,22 @@ def migrate_to_1_7_0(project_root: pathlib.Path) -> Tuple[bool, str]:
     if precommit_path.exists():
         precommit_content = precommit_path.read_text(encoding="utf-8")
         if "task-completion-gate" not in precommit_content:
-            notes.append("WARN: Pre-commit config may need manual update for task-completion-gate")
+            notes.append(
+                "WARN: Pre-commit config may need manual update for task-completion-gate"
+            )
         if "check-state-transition" not in precommit_content:
-            notes.append("WARN: Pre-commit config may need manual update for check-state-transition")
-        if "task-completion-gate" in precommit_content and "check-state-transition" in precommit_content:
+            notes.append(
+                "WARN: Pre-commit config may need manual update for check-state-transition"
+            )
+        if (
+            "task-completion-gate" in precommit_content
+            and "check-state-transition" in precommit_content
+        ):
             notes.append("Pre-commit config verified")
 
     if errors:
         return False, "; ".join(errors)
-    
+
     return True, "; ".join(notes)
 
 
@@ -123,4 +135,3 @@ def get_migration(version: str):
 def list_available_migrations() -> list[str]:
     """List all available migration versions."""
     return sorted(MIGRATIONS.keys())
-

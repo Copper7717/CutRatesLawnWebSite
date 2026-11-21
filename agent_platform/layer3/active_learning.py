@@ -16,7 +16,11 @@ def enqueue_feedback(
     reason: str,
     repository_id: str,
 ) -> str:
-    low_conf = [label for label, score in classification.confidence_by_label.items() if score < 0.7]
+    low_conf = [
+        label
+        for label, score in classification.confidence_by_label.items()
+        if score < 0.7
+    ]
     if not classification.abstained and not low_conf:
         return ""
     record: dict[str, Any] = {

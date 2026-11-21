@@ -23,7 +23,10 @@ import sys
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from agentic.diff_utils import extract_added_lines, is_guardrail_catalog_path  # noqa: E402
+from agentic.diff_utils import (
+    extract_added_lines,
+    is_guardrail_catalog_path,
+)  # noqa: E402
 
 try:
     import yaml
@@ -102,7 +105,9 @@ def get_staged_paths() -> list[str]:
             cwd=REPO_ROOT,
             check=False,
         )
-        return [line.strip() for line in (result.stdout or "").splitlines() if line.strip()]
+        return [
+            line.strip() for line in (result.stdout or "").splitlines() if line.strip()
+        ]
     except FileNotFoundError:
         return []
 
@@ -134,8 +139,12 @@ def check_paths(paths: list[str], active_phase: str) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--status", action="store_true", help="Print active phase and exit 0")
-    parser.add_argument("--staged", action="store_true", help="Check git staged paths and diff content")
+    parser.add_argument(
+        "--status", action="store_true", help="Print active phase and exit 0"
+    )
+    parser.add_argument(
+        "--staged", action="store_true", help="Check git staged paths and diff content"
+    )
     parser.add_argument("--check-path", action="append", default=[], dest="paths")
     args = parser.parse_args()
 
@@ -160,7 +169,9 @@ def main() -> int:
     if args.staged:
         diff_text = get_staged_diff()
         if diff_text:
-            violations.extend(is_future_phase_work(extract_added_lines(diff_text), phase_id))
+            violations.extend(
+                is_future_phase_work(extract_added_lines(diff_text), phase_id)
+            )
 
     if violations:
         print(f"[phase-gate] FAIL: work outside active phase '{phase_id}':")

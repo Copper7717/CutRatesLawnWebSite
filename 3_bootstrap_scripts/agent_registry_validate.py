@@ -36,7 +36,10 @@ def tool_exists(tool_name: str, tool_cfg: dict) -> bool:
         return (REPO_ROOT / tool_cfg["path"]).exists()
     if "module" in tool_cfg:
         module_path = REPO_ROOT / str(tool_cfg["module"]).replace(".", "/")
-        return module_path.with_suffix(".py").exists() or (module_path / "__init__.py").exists()
+        return (
+            module_path.with_suffix(".py").exists()
+            or (module_path / "__init__.py").exists()
+        )
     return False
 
 
@@ -49,7 +52,11 @@ def validate(data: dict) -> list[str]:
         for err in sorted(validator.iter_errors(data), key=lambda e: list(e.path)):
             errors.append(f"schema: {err.message} at {list(err.path)}")
 
-    agents = {a["id"]: a for a in (data.get("agents") or []) if isinstance(a, dict) and "id" in a}
+    agents = {
+        a["id"]: a
+        for a in (data.get("agents") or [])
+        if isinstance(a, dict) and "id" in a
+    }
     tools_catalog = data.get("tools") or {}
     graph = data.get("graph") or {}
 

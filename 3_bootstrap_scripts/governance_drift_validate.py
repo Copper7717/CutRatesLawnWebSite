@@ -35,9 +35,17 @@ def load_permissions() -> tuple[set[str], set[str], set[str]]:
     with open(FLAGS_PATH, encoding="utf-8") as handle:
         flags = yaml.safe_load(handle) or {}
     perms = flags.get("permissions") or {}
-    write_to = {_norm_dir(p) for p in (perms.get("write_to") or []) if isinstance(p, str)}
-    readonly = {_norm_dir(p) for p in (perms.get("readonly") or []) if isinstance(p, str)}
-    elevated = {_norm_dir(p) for p in (perms.get("elevated_write_to") or []) if isinstance(p, str)}
+    write_to = {
+        _norm_dir(p) for p in (perms.get("write_to") or []) if isinstance(p, str)
+    }
+    readonly = {
+        _norm_dir(p) for p in (perms.get("readonly") or []) if isinstance(p, str)
+    }
+    elevated = {
+        _norm_dir(p)
+        for p in (perms.get("elevated_write_to") or [])
+        if isinstance(p, str)
+    }
     return write_to, readonly, elevated
 
 
