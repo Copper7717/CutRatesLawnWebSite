@@ -63,11 +63,19 @@ def initialize_version_manifest(template_repo: str, version: str = "1.0.0") -> d
         "last_updated_at": None,
         "update_history": [],
         "features": {
-            "dynamic_layout_adaptation": pathlib.Path("3_bootstrap_scripts/layout_adaptor.py").exists(),
-            "guided_initialization": pathlib.Path("3_bootstrap_scripts/init_wizard.py").exists(),
-            "dynamic_ai_context": pathlib.Path("3_bootstrap_scripts/generate_ai_context.py").exists(),
+            "dynamic_layout_adaptation": pathlib.Path(
+                "3_bootstrap_scripts/layout_adaptor.py"
+            ).exists(),
+            "guided_initialization": pathlib.Path(
+                "3_bootstrap_scripts/init_wizard.py"
+            ).exists(),
+            "dynamic_ai_context": pathlib.Path(
+                "3_bootstrap_scripts/generate_ai_context.py"
+            ).exists(),
             "template_versioning": True,  # Being initialized now
-            "drift_detection": pathlib.Path("scripts/meta_framework_drift_check.py").exists(),
+            "drift_detection": pathlib.Path(
+                "scripts/meta_framework_drift_check.py"
+            ).exists(),
         },
         "template_directories": [
             "0_phase0_bootstrap/",
@@ -100,7 +108,13 @@ def save_version_manifest(manifest: dict) -> bool:
     try:
         VERSION_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(VERSION_FILE, "w", encoding="utf-8") as f:
-            yaml.dump(manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            yaml.dump(
+                manifest,
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+            )
         return True
     except Exception as e:
         print(f"ERROR: Failed to save version manifest: {e}")

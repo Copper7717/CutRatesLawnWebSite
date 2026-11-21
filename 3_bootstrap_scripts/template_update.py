@@ -34,12 +34,12 @@ VERSION_SCHEMA = pathlib.Path("7_schemas/meta_framework_version.schema.json")
 # Custom exception classes for enhanced error handling
 class TemplateUpdateError(Exception):
     """Base exception for template update errors."""
-    
+
     def __init__(self, message: str, **context):
         super().__init__(message)
         self.message = message
         self.context = context
-    
+
     def __str__(self) -> str:
         msg = self.message
         if self.context:
@@ -51,9 +51,13 @@ class TemplateUpdateError(Exception):
 
 class MigrationError(TemplateUpdateError):
     """Migration-specific error."""
-    
-    def __init__(self, message: str, version: str = "", details: str = "", suggestion: str = ""):
-        super().__init__(message, version=version, details=details, suggestion=suggestion)
+
+    def __init__(
+        self, message: str, version: str = "", details: str = "", suggestion: str = ""
+    ):
+        super().__init__(
+            message, version=version, details=details, suggestion=suggestion
+        )
         self.version = version
         self.details = details
         self.suggestion = suggestion
@@ -61,9 +65,13 @@ class MigrationError(TemplateUpdateError):
 
 class FileCopyError(TemplateUpdateError):
     """File copy error."""
-    
-    def __init__(self, message: str, file_path: str = "", source: str = "", destination: str = ""):
-        super().__init__(message, file_path=file_path, source=source, destination=destination)
+
+    def __init__(
+        self, message: str, file_path: str = "", source: str = "", destination: str = ""
+    ):
+        super().__init__(
+            message, file_path=file_path, source=source, destination=destination
+        )
         self.file_path = file_path
         self.source = source
         self.destination = destination
@@ -71,8 +79,10 @@ class FileCopyError(TemplateUpdateError):
 
 class CloneError(TemplateUpdateError):
     """Template repository clone error."""
-    
-    def __init__(self, message: str, repo: str = "", version: str = "", suggestion: str = ""):
+
+    def __init__(
+        self, message: str, repo: str = "", version: str = "", suggestion: str = ""
+    ):
         super().__init__(message, repo=repo, version=version, suggestion=suggestion)
         self.repo = repo
         self.version = version
@@ -81,7 +91,7 @@ class CloneError(TemplateUpdateError):
 
 class ValidationError(TemplateUpdateError):
     """Schema validation error."""
-    
+
     def __init__(self, message: str, errors: List[str] = None, file_path: str = ""):
         super().__init__(message, errors=errors or [], file_path=file_path)
         self.errors = errors or []
@@ -91,10 +101,10 @@ class ValidationError(TemplateUpdateError):
 def calculate_file_checksum(file_path: pathlib.Path) -> str:
     """
     Calculate SHA256 checksum of a file.
-    
+
     Args:
         file_path: Path to the file
-    
+
     Returns:
         SHA256 checksum as hexadecimal string
     """
@@ -107,19 +117,18 @@ def calculate_file_checksum(file_path: pathlib.Path) -> str:
         return sha256.hexdigest()
     except Exception as e:
         raise FileCopyError(
-            f"Failed to calculate checksum: {e}",
-            file_path=str(file_path)
+            f"Failed to calculate checksum: {e}", file_path=str(file_path)
         ) from e
 
 
 def verify_file_integrity(source_path: pathlib.Path, dest_path: pathlib.Path) -> bool:
     """
     Verify that source and destination files have matching checksums.
-    
+
     Args:
         source_path: Path to source file
         dest_path: Path to destination file
-    
+
     Returns:
         True if files match, False otherwise
     """
@@ -127,7 +136,7 @@ def verify_file_integrity(source_path: pathlib.Path, dest_path: pathlib.Path) ->
         return False
     if not dest_path.exists():
         return False
-    
+
     try:
         source_checksum = calculate_file_checksum(source_path)
         dest_checksum = calculate_file_checksum(dest_path)
@@ -137,114 +146,105 @@ def verify_file_integrity(source_path: pathlib.Path, dest_path: pathlib.Path) ->
 
 
 def verify_copied_files(
-    template_dir: pathlib.Path,
-    target_dir: pathlib.Path,
-    updated_files: List[str]
+    template_dir: pathlib.Path, target_dir: pathlib.Path, updated_files: List[str]
 ) -> Tuple[bool, List[str]]:
     """
     Verify integrity of all copied files.
-    
+
     Args:
         template_dir: Template directory (source)
         target_dir: Target directory (destination)
         updated_files: List of relative file paths that were copied
-    
+
     Returns:
         Tuple of (all_match: bool, mismatches: List[str])
     """
     mismatches = []
-    
+
     for rel_path in updated_files:
         source_file = template_dir / rel_path
         dest_file = target_dir / rel_path
-        
+
         if not verify_file_integrity(source_file, dest_file):
             mismatches.append(rel_path)
-    
+
     return len(mismatches) == 0, mismatches
 
 
 def copy_to_staging_directory(
-    template_dir: pathlib.Path,
-    staging_dir: pathlib.Path,
-    files: List[str]
+    template_dir: pathlib.Path, staging_dir: pathlib.Path, files: List[str]
 ) -> bool:
     """
     Copy files to staging directory for atomic update.
-    
+
     Args:
         template_dir: Template directory (source)
         staging_dir: Staging directory (temporary)
         files: List of relative file paths to copy
-    
+
     Returns:
         True if all files copied successfully, False otherwise
     """
     try:
         staging_dir.mkdir(parents=True, exist_ok=True)
-        
+
         for rel_path in files:
             source_file = template_dir / rel_path
             staging_file = staging_dir / rel_path
-            
+
             if not source_file.exists():
                 continue
-            
+
             # Create parent directories
             staging_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Copy file
             shutil.copy2(source_file, staging_file)
-        
+
         return True
     except Exception as e:
         raise FileCopyError(
-            f"Failed to copy files to staging: {e}",
-            file_path=", ".join(files[:3])
+            f"Failed to copy files to staging: {e}", file_path=", ".join(files[:3])
         ) from e
 
 
 def verify_staging_directory(
-    staging_dir: pathlib.Path,
-    template_dir: pathlib.Path,
-    files: List[str]
+    staging_dir: pathlib.Path, template_dir: pathlib.Path, files: List[str]
 ) -> Tuple[bool, List[str]]:
     """
     Verify all files in staging directory match template.
-    
+
     Args:
         staging_dir: Staging directory
         template_dir: Template directory (source)
         files: List of relative file paths to verify
-    
+
     Returns:
         Tuple of (all_valid: bool, invalid_files: List[str])
     """
     invalid = []
-    
+
     for rel_path in files:
         staging_file = staging_dir / rel_path
         template_file = template_dir / rel_path
-        
+
         if not verify_file_integrity(template_file, staging_file):
             invalid.append(rel_path)
-    
+
     return len(invalid) == 0, invalid
 
 
 def apply_staging_to_target(
-    staging_dir: pathlib.Path,
-    target_dir: pathlib.Path,
-    files: List[str]
+    staging_dir: pathlib.Path, target_dir: pathlib.Path, files: List[str]
 ) -> bool:
     """
     Apply staging files to target directory atomically.
-    
+
     Args:
         staging_dir: Staging directory
         target_dir: Target directory
         files: List of relative file paths to apply
-    
+
     Returns:
         True if all files applied successfully, False otherwise
     """
@@ -252,33 +252,32 @@ def apply_staging_to_target(
         for rel_path in files:
             staging_file = staging_dir / rel_path
             target_file = target_dir / rel_path
-            
+
             if not staging_file.exists():
                 continue
-            
+
             # Create parent directories
             target_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Move file from staging to target (atomic on most systems)
             if target_file.exists():
                 target_file.unlink()  # Remove existing file first
             shutil.move(str(staging_file), str(target_file))
-        
+
         return True
     except Exception as e:
         raise FileCopyError(
-            f"Failed to apply staging files: {e}",
-            file_path=", ".join(files[:3])
+            f"Failed to apply staging files: {e}", file_path=", ".join(files[:3])
         ) from e
 
 
 def rollback_staging(staging_dir: pathlib.Path) -> bool:
     """
     Rollback staging directory by removing it.
-    
+
     Args:
         staging_dir: Staging directory to remove
-    
+
     Returns:
         True if rollback successful, False otherwise
     """
@@ -295,52 +294,49 @@ def rollback_staging(staging_dir: pathlib.Path) -> bool:
 def create_backup(target_dir: pathlib.Path, files: List[str]) -> pathlib.Path:
     """
     Create backup of files before update.
-    
+
     Args:
         target_dir: Target directory containing files to backup
         files: List of relative file paths to backup
-    
+
     Returns:
         Path to backup directory
     """
     backup_dir = pathlib.Path(tempfile.mkdtemp(prefix="template_backup_"))
-    
+
     try:
         for rel_path in files:
             source_file = target_dir / rel_path
-            
+
             if not source_file.exists():
                 continue
-            
+
             backup_file = backup_dir / rel_path
             backup_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Copy file to backup
             shutil.copy2(source_file, backup_file)
-        
+
         return backup_dir
     except Exception as e:
         # Cleanup on failure
         shutil.rmtree(backup_dir, ignore_errors=True)
         raise FileCopyError(
-            f"Failed to create backup: {e}",
-            file_path=", ".join(files[:3])
+            f"Failed to create backup: {e}", file_path=", ".join(files[:3])
         ) from e
 
 
 def restore_from_backup(
-    backup_dir: pathlib.Path,
-    target_dir: pathlib.Path,
-    files: List[str]
+    backup_dir: pathlib.Path, target_dir: pathlib.Path, files: List[str]
 ) -> bool:
     """
     Restore files from backup.
-    
+
     Args:
         backup_dir: Backup directory
         target_dir: Target directory to restore to
         files: List of relative file paths to restore
-    
+
     Returns:
         True if restore successful, False otherwise
     """
@@ -348,33 +344,32 @@ def restore_from_backup(
         for rel_path in files:
             backup_file = backup_dir / rel_path
             target_file = target_dir / rel_path
-            
+
             if not backup_file.exists():
                 continue
-            
+
             # Create parent directories
             target_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Restore file from backup
             if target_file.exists():
                 target_file.unlink()  # Remove existing file first
             shutil.copy2(backup_file, target_file)
-        
+
         return True
     except Exception as e:
         raise FileCopyError(
-            f"Failed to restore from backup: {e}",
-            file_path=", ".join(files[:3])
+            f"Failed to restore from backup: {e}", file_path=", ".join(files[:3])
         ) from e
 
 
 def cleanup_backup(backup_dir: pathlib.Path) -> bool:
     """
     Cleanup backup directory.
-    
+
     Args:
         backup_dir: Backup directory to remove
-    
+
     Returns:
         True if cleanup successful, False otherwise
     """
@@ -389,18 +384,16 @@ def cleanup_backup(backup_dir: pathlib.Path) -> bool:
 
 
 def rollback_update(
-    backup_dir: pathlib.Path,
-    target_dir: pathlib.Path,
-    files: List[str]
+    backup_dir: pathlib.Path, target_dir: pathlib.Path, files: List[str]
 ) -> bool:
     """
     Rollback update by restoring from backup and cleaning up.
-    
+
     Args:
         backup_dir: Backup directory
         target_dir: Target directory to restore to
         files: List of relative file paths to restore
-    
+
     Returns:
         True if rollback successful, False otherwise
     """
@@ -409,7 +402,7 @@ def rollback_update(
         restore_success = restore_from_backup(backup_dir, target_dir, files)
         if not restore_success:
             return False
-        
+
         # Cleanup backup
         cleanup_backup(backup_dir)
         return True
@@ -417,15 +410,14 @@ def rollback_update(
         # Try to cleanup even if restore failed
         cleanup_backup(backup_dir)
         raise FileCopyError(
-            f"Failed to rollback update: {e}",
-            file_path=", ".join(files[:3])
+            f"Failed to rollback update: {e}", file_path=", ".join(files[:3])
         ) from e
 
 
 def handle_update_error(error: Exception, from_version: str, to_version: str) -> None:
     """
     Handle update errors by reporting to feedback system.
-    
+
     Args:
         error: The exception that occurred
         from_version: Source version
@@ -433,18 +425,18 @@ def handle_update_error(error: Exception, from_version: str, to_version: str) ->
     """
     error_type = type(error).__name__
     error_msg = str(error)
-    
+
     # Extract details and suggestions from error context if available
     details = error_msg
     suggestion = ""
-    
+
     if isinstance(error, TemplateUpdateError):
         details = error.message
-        if hasattr(error, 'details') and error.details:
+        if hasattr(error, "details") and error.details:
             details += f": {error.details}"
-        if hasattr(error, 'suggestion') and error.suggestion:
+        if hasattr(error, "suggestion") and error.suggestion:
             suggestion = error.suggestion
-    
+
     # Report to feedback system
     report_update_issue(
         issue_type=error_type,
@@ -453,40 +445,42 @@ def handle_update_error(error: Exception, from_version: str, to_version: str) ->
         migration_applied=False,
         details=details,
         error=error_msg,
-        resolution=suggestion or "Review error details and retry update"
+        resolution=suggestion or "Review error details and retry update",
     )
 
 
-def validate_version_manifest(manifest: Dict[str, Any], project_root: pathlib.Path = None) -> Tuple[bool, List[str]]:
+def validate_version_manifest(
+    manifest: Dict[str, Any], project_root: pathlib.Path = None
+) -> Tuple[bool, List[str]]:
     """
     Validate version manifest against schema.
-    
+
     Args:
         manifest: Version manifest dictionary to validate
         project_root: Root directory of the project (default: current directory)
-    
+
     Returns:
         Tuple of (is_valid: bool, errors: List[str])
     """
     if project_root is None:
         project_root = pathlib.Path(".")
-    
+
     schema_path = project_root / VERSION_SCHEMA
-    
+
     # If schema doesn't exist, skip validation (graceful degradation)
     if not schema_path.exists():
         return True, []
-    
+
     try:
         import jsonschema
     except ImportError:
         # jsonschema not available, skip validation
         return True, []
-    
+
     try:
         with open(schema_path, "r", encoding="utf-8") as f:
             schema = json.load(f)
-        
+
         # Validate manifest against schema
         jsonschema.validate(instance=manifest, schema=schema)
         return True, []
@@ -501,47 +495,51 @@ def validate_version_manifest(manifest: Dict[str, Any], project_root: pathlib.Pa
         return False, [f"Validation error: {e}"]
 
 
-def validate_before_update(manifest: Dict[str, Any], project_root: pathlib.Path = None) -> bool:
+def validate_before_update(
+    manifest: Dict[str, Any], project_root: pathlib.Path = None
+) -> bool:
     """
     Validate version manifest before update operations.
-    
+
     Args:
         manifest: Version manifest to validate
         project_root: Root directory of the project
-    
+
     Returns:
         True if valid, False otherwise (prints errors)
     """
     is_valid, errors = validate_version_manifest(manifest, project_root)
-    
+
     if not is_valid:
         print("ERROR: Version manifest validation failed before update:")
         for error in errors:
             print(f"  - {error}")
         print("  Update aborted to prevent corruption.")
-    
+
     return is_valid
 
 
-def validate_after_update(manifest: Dict[str, Any], project_root: pathlib.Path = None) -> bool:
+def validate_after_update(
+    manifest: Dict[str, Any], project_root: pathlib.Path = None
+) -> bool:
     """
     Validate version manifest after update operations.
-    
+
     Args:
         manifest: Version manifest to validate
         project_root: Root directory of the project
-    
+
     Returns:
         True if valid, False otherwise (prints errors)
     """
     is_valid, errors = validate_version_manifest(manifest, project_root)
-    
+
     if not is_valid:
         print("ERROR: Version manifest validation failed after update:")
         for error in errors:
             print(f"  - {error}")
         print("  WARN: Manifest may be corrupted. Review manually.")
-    
+
     return is_valid
 
 
@@ -557,15 +555,17 @@ def load_version_manifest() -> Optional[Dict[str, Any]]:
         return None
 
 
-def save_version_manifest(manifest: Dict[str, Any], validate: bool = True, project_root: pathlib.Path = None) -> bool:
+def save_version_manifest(
+    manifest: Dict[str, Any], validate: bool = True, project_root: pathlib.Path = None
+) -> bool:
     """
     Save the version manifest with optional validation.
-    
+
     Args:
         manifest: Version manifest to save
         validate: Whether to validate before saving (default: True)
         project_root: Root directory of the project
-    
+
     Returns:
         True if saved successfully, False otherwise
     """
@@ -577,11 +577,17 @@ def save_version_manifest(manifest: Dict[str, Any], validate: bool = True, proje
             for error in errors:
                 print(f"  - {error}")
             return False
-    
+
     try:
         VERSION_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(VERSION_FILE, "w", encoding="utf-8") as f:
-            yaml.dump(manifest, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            yaml.dump(
+                manifest,
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+            )
         return True
     except Exception as e:
         print(f"ERROR: Failed to save version manifest: {e}")
@@ -593,7 +599,9 @@ def detect_pre_versioned_project() -> bool:
     return not VERSION_FILE.exists()
 
 
-def initialize_version_manifest(template_repo: str, version: str = "1.0.0") -> Dict[str, Any]:
+def initialize_version_manifest(
+    template_repo: str, version: str = "1.0.0"
+) -> Dict[str, Any]:
     """Create initial version manifest for pre-versioned projects."""
     return {
         "template_version": version,
@@ -602,11 +610,19 @@ def initialize_version_manifest(template_repo: str, version: str = "1.0.0") -> D
         "last_updated_at": None,
         "update_history": [],
         "features": {
-            "dynamic_layout_adaptation": pathlib.Path("3_bootstrap_scripts/layout_adaptor.py").exists(),
-            "guided_initialization": pathlib.Path("3_bootstrap_scripts/init_wizard.py").exists(),
-            "dynamic_ai_context": pathlib.Path("3_bootstrap_scripts/generate_ai_context.py").exists(),
+            "dynamic_layout_adaptation": pathlib.Path(
+                "3_bootstrap_scripts/layout_adaptor.py"
+            ).exists(),
+            "guided_initialization": pathlib.Path(
+                "3_bootstrap_scripts/init_wizard.py"
+            ).exists(),
+            "dynamic_ai_context": pathlib.Path(
+                "3_bootstrap_scripts/generate_ai_context.py"
+            ).exists(),
             "template_versioning": False,  # Being added now
-            "drift_detection": pathlib.Path("scripts/meta_framework_drift_check.py").exists(),
+            "drift_detection": pathlib.Path(
+                "scripts/meta_framework_drift_check.py"
+            ).exists(),
         },
         "template_directories": [
             "0_phase0_bootstrap/",
@@ -636,7 +652,7 @@ def initialize_version_manifest(template_repo: str, version: str = "1.0.0") -> D
 
 def get_latest_template_version(template_repo: str) -> Optional[str]:
     """Get the latest version from the template repository.
-    
+
     Tries multiple methods:
     1. GitHub API (read from META_FRAMEWORK_VERSION.yaml) - PRIMARY
     2. Git tags - FALLBACK
@@ -646,17 +662,18 @@ def get_latest_template_version(template_repo: str) -> Optional[str]:
         import requests
         import re
         import base64
-        
+
         # Extract owner/repo from URL
         match = re.search(r"github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$", template_repo)
         if match:
             owner, repo = match.groups()
             api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/0_phase0_bootstrap/META_FRAMEWORK_VERSION.yaml"
-            
+
             response = requests.get(api_url, timeout=10)
             if response.status_code == 200:
                 content = base64.b64decode(response.json()["content"]).decode("utf-8")
                 import yaml
+
                 manifest = yaml.safe_load(content)
                 version = manifest.get("template_version")
                 if version:
@@ -667,7 +684,7 @@ def get_latest_template_version(template_repo: str) -> Optional[str]:
     except Exception:
         # API failed, continue to fallback
         pass
-    
+
     # Method 2: Fallback to git tags
     try:
         result = subprocess.run(
@@ -704,10 +721,12 @@ def get_latest_template_version(template_repo: str) -> Optional[str]:
         return None
 
 
-def clone_template_to_temp(template_repo: str, version: Optional[str] = None) -> Optional[pathlib.Path]:
+def clone_template_to_temp(
+    template_repo: str, version: Optional[str] = None
+) -> Optional[pathlib.Path]:
     """
     Clone template repository to a temporary directory.
-    
+
     Raises:
         CloneError: If cloning fails
     """
@@ -724,7 +743,7 @@ def clone_template_to_temp(template_repo: str, version: Optional[str] = None) ->
                 f"Failed to clone template repository: {result.stderr or 'Unknown error'}",
                 repo=template_repo,
                 version=version or "latest",
-                suggestion=suggestion
+                suggestion=suggestion,
             )
         return pathlib.Path(temp_dir)
     except CloneError:
@@ -735,7 +754,7 @@ def clone_template_to_temp(template_repo: str, version: Optional[str] = None) ->
             f"Unexpected error cloning template: {e}",
             repo=template_repo,
             version=version or "latest",
-            suggestion="Check git installation and repository access"
+            suggestion="Check git installation and repository access",
         ) from e
 
 
@@ -796,14 +815,14 @@ def copy_template_files(
             if not dry_run:
                 try:
                     shutil.copy2(src_file, target_file)
-                    
+
                     # Verify file integrity after copy
                     if not verify_file_integrity(src_file, target_file):
                         raise FileCopyError(
                             f"File integrity verification failed after copy",
                             file_path=rel_str,
                             source=str(src_file),
-                            destination=str(target_file)
+                            destination=str(target_file),
                         )
                 except FileCopyError:
                     raise  # Re-raise FileCopyError
@@ -812,7 +831,7 @@ def copy_template_files(
                         f"Failed to copy file: {e}",
                         file_path=rel_str,
                         source=str(src_file),
-                        destination=str(target_file)
+                        destination=str(target_file),
                     ) from e
             updated_files.append(rel_str)
 
@@ -847,30 +866,34 @@ def update_version_manifest(
 def get_required_files_for_version(version: str) -> List[str]:
     """
     Get list of required files for a specific version migration.
-    
+
     Args:
         version: Target version string (e.g., "1.0.0")
-    
+
     Returns:
         List of file paths relative to project root
     """
     required = []
-    
+
     # Base requirements for all versions
     required.append("0_phase0_bootstrap/META_FRAMEWORK_VERSION.yaml")
-    
+
     # Version comparison helper
     def version_tuple(v: str) -> Tuple[int, int, int]:
         parts = v.split("-")[0].split(".")
-        return (int(parts[0]), int(parts[1]) if len(parts) > 1 else 0, int(parts[2]) if len(parts) > 2 else 0)
-    
+        return (
+            int(parts[0]),
+            int(parts[1]) if len(parts) > 1 else 0,
+            int(parts[2]) if len(parts) > 2 else 0,
+        )
+
     target_v = version_tuple(version)
-    
+
     # Version-specific requirements
     if target_v >= (1, 6, 0):
         required.append("1_global_standards/AI_OPERATING_CONSTITUTION.md")
         required.append("7_schemas/intent_declaration.schema.json")
-    
+
     if target_v >= (1, 7, 0):
         required.append("3_bootstrap_scripts/auto_advance_state.py")
 
@@ -890,56 +913,55 @@ def get_required_files_for_version(version: str) -> List[str]:
 
 
 def verify_migration_dependencies(
-    project_root: pathlib.Path,
-    target_version: str
+    project_root: pathlib.Path, target_version: str
 ) -> Tuple[bool, List[str]]:
     """
     Verify all required files exist before running migrations.
-    
+
     Args:
         project_root: Root directory of the project
         target_version: Target version for migration
-    
+
     Returns:
         Tuple of (all_present: bool, missing_files: List[str])
     """
     missing = []
     required_files = get_required_files_for_version(target_version)
-    
+
     for file_path in required_files:
         full_path = project_root / file_path
         if not full_path.exists():
             missing.append(file_path)
-    
+
     return len(missing) == 0, missing
 
 
 def check_migration_prerequisites(
-    migration_func,
-    project_root: pathlib.Path,
-    target_version: str
+    migration_func, project_root: pathlib.Path, target_version: str
 ) -> Tuple[bool, List[str]]:
     """
     Check prerequisites for a specific migration function.
-    
+
     Args:
         migration_func: Migration function to check
         project_root: Root directory of the project
         target_version: Target version
-    
+
     Returns:
         Tuple of (all_present: bool, missing_files: List[str])
     """
     # First check general dependencies
     all_present, missing = verify_migration_dependencies(project_root, target_version)
-    
+
     # Migration-specific checks could be added here
     # For now, we rely on the general dependency check
-    
+
     return all_present, missing
 
 
-def apply_migrations(from_version: str, to_version: str, project_root: pathlib.Path = None) -> Tuple[bool, str]:
+def apply_migrations(
+    from_version: str, to_version: str, project_root: pathlib.Path = None
+) -> Tuple[bool, str]:
     """Apply migrations between versions. Returns (success, notes)."""
     if project_root is None:
         project_root = pathlib.Path(".")
@@ -954,7 +976,11 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
         if v == "latest":
             return (999, 999, 999)  # High version number
         parts = v.split("-")[0].split(".")
-        return (int(parts[0]), int(parts[1]) if len(parts) > 1 else 0, int(parts[2]) if len(parts) > 2 else 0)
+        return (
+            int(parts[0]),
+            int(parts[1]) if len(parts) > 1 else 0,
+            int(parts[2]) if len(parts) > 2 else 0,
+        )
 
     from_v = version_tuple(from_version)
     to_v = version_tuple(to_version)
@@ -965,6 +991,7 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
     # Try to load migration modules
     try:
         import sys
+
         migrations_path = pathlib.Path(__file__).parent / "migrations"
         if migrations_path.exists():
             sys.path.insert(0, str(pathlib.Path(__file__).parent))
@@ -976,15 +1003,17 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
                 target_v = version_tuple(target_version)
                 if from_v < target_v <= to_v:
                     # Verify dependencies before running migration
-                    all_present, missing = verify_migration_dependencies(project_root, target_version)
+                    all_present, missing = verify_migration_dependencies(
+                        project_root, target_version
+                    )
                     if not all_present:
                         raise MigrationError(
                             f"Migration dependencies missing for version {target_version}",
                             version=target_version,
                             details=f"Missing files: {', '.join(missing)}",
-                            suggestion="Ensure all required template files are copied before running migrations"
+                            suggestion="Ensure all required template files are copied before running migrations",
                         )
-                    
+
                     migration_func = get_migration(target_version)
                     if migration_func:
                         # Additional prerequisite check
@@ -996,9 +1025,9 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
                                 f"Migration prerequisites not met for version {target_version}",
                                 version=target_version,
                                 details=f"Missing prerequisites: {', '.join(missing_prereq)}",
-                                suggestion="Ensure all migration prerequisites are satisfied"
+                                suggestion="Ensure all migration prerequisites are satisfied",
                             )
-                        
+
                         success, migration_notes = migration_func(project_root)
                         if success:
                             notes.append(f"{target_version}: {migration_notes}")
@@ -1008,7 +1037,7 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
                                 f"Migration failed for version {target_version}",
                                 version=target_version,
                                 details=migration_notes or "Migration returned failure",
-                                suggestion="Review migration logs and fix issues before retrying"
+                                suggestion="Review migration logs and fix issues before retrying",
                             )
     except ImportError:
         # Fallback to simple migrations if module system not available
@@ -1020,7 +1049,7 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
                     "Migration dependencies missing for version 1.0.0",
                     version="1.0.0",
                     details=f"Missing files: {', '.join(missing)}",
-                    suggestion="Ensure all required template files are copied before running migrations"
+                    suggestion="Ensure all required template files are copied before running migrations",
                 )
             notes.append("Initialized template versioning system")
             migration_needed = True
@@ -1028,7 +1057,9 @@ def apply_migrations(from_version: str, to_version: str, project_root: pathlib.P
     return migration_needed, "; ".join(notes) if notes else "No migrations required"
 
 
-def check_for_updates(template_repo: str, current_version: Optional[str] = None) -> Optional[str]:
+def check_for_updates(
+    template_repo: str, current_version: Optional[str] = None
+) -> Optional[str]:
     """Check if updates are available."""
     latest = get_latest_template_version(template_repo)
     if not latest:
@@ -1103,7 +1134,7 @@ def main(argv: list[str]) -> int:
     # Load or initialize version manifest
     manifest = load_version_manifest()
     is_pre_versioned = detect_pre_versioned_project()
-    
+
     # Validate existing manifest before proceeding
     if manifest and not validate_before_update(manifest):
         return 1
@@ -1112,7 +1143,9 @@ def main(argv: list[str]) -> int:
         if not args.init_versioning:
             print("WARN: This project does not have version tracking initialized.")
             print("Run with --init-versioning to initialize versioning (AI-assisted).")
-            print("This will detect your template source and create a version manifest.")
+            print(
+                "This will detect your template source and create a version manifest."
+            )
             return 1
 
         # AI-assisted initialization for pre-versioned projects
@@ -1143,18 +1176,18 @@ def main(argv: list[str]) -> int:
                 return 1
 
         manifest = initialize_version_manifest(template_repo)
-        
+
         # Validate before saving
         if not validate_before_update(manifest):
             return 1
-        
+
         if not save_version_manifest(manifest, validate=False):
             return 1
-        
+
         # Validate after saving
         if not validate_after_update(manifest):
             print("WARN: Manifest saved but validation failed. Review manually.")
-        
+
         print("OK: Version tracking initialized")
 
         # Check if CLI has update-template command
@@ -1162,13 +1195,17 @@ def main(argv: list[str]) -> int:
         if not has_cli:
             print("\nWARN: CLI may not have update-template command.")
             print(f"      Issue: {cli_error}")
-            print("      You may need to update cli.py manually or use template_update.py directly.")
+            print(
+                "      You may need to update cli.py manually or use template_update.py directly."
+            )
             print("      See docs/VERSIONING_MIGRATION_GUIDE.md for details.")
 
     # Get template repo from manifest if not provided
     template_repo = args.template_repo or manifest.get("template_repo", "")
     if not template_repo:
-        print("ERROR: Template repository URL required (specify --template-repo or set in manifest)")
+        print(
+            "ERROR: Template repository URL required (specify --template-repo or set in manifest)"
+        )
         return 1
 
     current_version = manifest.get("template_version", "unknown")
@@ -1182,7 +1219,9 @@ def main(argv: list[str]) -> int:
                 target_version = resolved_latest
             else:
                 target_version = "latest"
-                print("WARN: Could not resolve 'latest' version, proceeding with 'latest'")
+                print(
+                    "WARN: Could not resolve 'latest' version, proceeding with 'latest'"
+                )
         else:
             print(f"INFO: Already at latest version ({current_version})")
             return 0
@@ -1194,10 +1233,14 @@ def main(argv: list[str]) -> int:
             print(f"Resolved 'latest' to version {resolved_latest}")
             target_version = resolved_latest
         else:
-            print("WARN: Could not resolve 'latest' version. Migrations will be skipped.")
+            print(
+                "WARN: Could not resolve 'latest' version. Migrations will be skipped."
+            )
 
     if not args.force and target_version == current_version:
-        print(f"INFO: Already at version {current_version} (idempotent: no changes needed)")
+        print(
+            f"INFO: Already at version {current_version} (idempotent: no changes needed)"
+        )
         return 0
 
     print(f"Updating template from {current_version} to {target_version}...")
@@ -1205,7 +1248,9 @@ def main(argv: list[str]) -> int:
     # Clone template
     print("Cloning template repository...")
     try:
-        template_dir = clone_template_to_temp(template_repo, target_version if target_version != "latest" else None)
+        template_dir = clone_template_to_temp(
+            template_repo, target_version if target_version != "latest" else None
+        )
     except CloneError as e:
         print(f"ERROR: {e}")
         if e.suggestion:
@@ -1258,10 +1303,10 @@ def main(argv: list[str]) -> int:
                         protected_files,
                         dry_run=True,
                     )
-                
+
                 # Atomic update: copy to staging, verify, then apply
                 staging_dir = pathlib.Path(tempfile.mkdtemp(prefix="template_staging_"))
-                
+
                 # Step 1: Copy to staging
                 print("  Copying files to staging directory...")
                 updated, skipped = copy_template_files(
@@ -1271,38 +1316,38 @@ def main(argv: list[str]) -> int:
                     protected_files,
                     dry_run=False,
                 )
-                
+
                 # Step 2: Verify staging
                 print("  Verifying staging directory...")
                 all_valid, invalid = verify_staging_directory(
-                    staging_dir,
-                    template_dir,
-                    updated
+                    staging_dir, template_dir, updated
                 )
                 if not all_valid:
-                    print(f"ERROR: Staging verification failed for {len(invalid)} file(s):")
+                    print(
+                        f"ERROR: Staging verification failed for {len(invalid)} file(s):"
+                    )
                     for inv_file in invalid[:10]:
                         print(f"  - {inv_file}")
                     if len(invalid) > 10:
                         print(f"  ... and {len(invalid) - 10} more")
-                    
+
                     rollback_staging(staging_dir)
                     if backup_dir:
                         print("  Rolling back to previous version...")
                         rollback_update(backup_dir, target_dir, preview_updated)
                     integrity_error = FileCopyError(
                         f"Staging verification failed: {len(invalid)} file(s) do not match",
-                        file_path=", ".join(invalid[:5])
+                        file_path=", ".join(invalid[:5]),
                     )
-                    handle_update_error(integrity_error, current_version, target_version)
+                    handle_update_error(
+                        integrity_error, current_version, target_version
+                    )
                     return 1
-                
+
                 # Step 3: Apply staging to target (atomic)
                 print("  Applying staging to target...")
                 apply_success = apply_staging_to_target(
-                    staging_dir,
-                    target_dir,
-                    updated
+                    staging_dir, target_dir, updated
                 )
                 if not apply_success:
                     rollback_staging(staging_dir)
@@ -1311,9 +1356,9 @@ def main(argv: list[str]) -> int:
                         rollback_update(backup_dir, target_dir, preview_updated)
                     raise FileCopyError(
                         "Failed to apply staging files to target",
-                        file_path="multiple files"
+                        file_path="multiple files",
                     )
-                
+
                 # Step 4: Cleanup staging and backup
                 rollback_staging(staging_dir)
                 staging_dir = None
@@ -1328,7 +1373,7 @@ def main(argv: list[str]) -> int:
                 print("  Rolling back to previous version...")
                 try:
                     # Try to get preview_updated if not already available
-                    if 'preview_updated' not in locals():
+                    if "preview_updated" not in locals():
                         preview_updated, _ = copy_template_files(
                             template_dir,
                             pathlib.Path(tempfile.mkdtemp(prefix="preview_")),
@@ -1348,7 +1393,9 @@ def main(argv: list[str]) -> int:
             return 1
 
         if args.dry_run:
-            print(f"\nDRY RUN: Would update {len(updated)} files, skip {len(skipped)} protected files")
+            print(
+                f"\nDRY RUN: Would update {len(updated)} files, skip {len(skipped)} protected files"
+            )
             if updated:
                 print("\nFiles to be updated:")
                 for f in updated[:20]:  # Show first 20
@@ -1367,7 +1414,9 @@ def main(argv: list[str]) -> int:
         migration_applied = False
         migration_notes = "No migrations required"
         try:
-            migration_applied, migration_notes = apply_migrations(current_version, target_version, pathlib.Path("."))
+            migration_applied, migration_notes = apply_migrations(
+                current_version, target_version, pathlib.Path(".")
+            )
         except MigrationError as e:
             print(f"ERROR: {e}")
             if e.details:
@@ -1391,15 +1440,17 @@ def main(argv: list[str]) -> int:
             handle_update_error(e, current_version, target_version)
 
         # Always update version manifest (even if migrations failed)
-        manifest = update_version_manifest(manifest, target_version, migration_applied, migration_notes)
-        
+        manifest = update_version_manifest(
+            manifest, target_version, migration_applied, migration_notes
+        )
+
         # Validate before saving
         if not validate_before_update(manifest):
             return 1
-        
+
         if not save_version_manifest(manifest, validate=False):
             return 1
-        
+
         # Validate after saving
         if not validate_after_update(manifest):
             print("WARN: Manifest saved but validation failed. Review manually.")

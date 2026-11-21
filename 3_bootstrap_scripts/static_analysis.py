@@ -10,7 +10,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from pre_commit_utils import PIP_TIMEOUT, SUBPROCESS_TIMEOUT, TEST_TIMEOUT, run_subprocess  # noqa: E402
+from pre_commit_utils import (
+    PIP_TIMEOUT,
+    SUBPROCESS_TIMEOUT,
+    TEST_TIMEOUT,
+    run_subprocess,
+)  # noqa: E402
 
 
 def main() -> int:

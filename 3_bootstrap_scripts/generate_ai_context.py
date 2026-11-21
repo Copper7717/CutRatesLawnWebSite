@@ -44,11 +44,7 @@ def read_file(path: pathlib.Path, description: str) -> Optional[str]:
 
 def extract_sandbox_rules(content: str) -> Dict[str, List[str]]:
     """Extract rules from AI_SANDBOX_RULES.md"""
-    rules = {
-        "allowed": [],
-        "required": [],
-        "forbidden": []
-    }
+    rules = {"allowed": [], "required": [], "forbidden": []}
 
     if not content:
         return rules
@@ -84,10 +80,7 @@ def extract_sandbox_rules(content: str) -> Dict[str, List[str]]:
 
 def parse_feature_flags(content: str) -> Dict[str, Dict[str, bool]]:
     """Parse feature flags from feature_flags.yml"""
-    flags = {
-        "enabled": {},
-        "disabled": {}
-    }
+    flags = {"enabled": {}, "disabled": {}}
 
     if not content:
         return flags
@@ -138,7 +131,7 @@ def parse_active_plan(content: str) -> Dict[str, any]:
         "goal": "",
         "current_task": None,
         "status": "",
-        "tasks": []
+        "tasks": [],
     }
 
     if not content:
@@ -163,11 +156,7 @@ def parse_active_plan(content: str) -> Dict[str, any]:
 
 def parse_task_pointer(content: str) -> Dict[str, any]:
     """Parse task pointer from ACTIVE_TASK_POINTER.yaml"""
-    pointer = {
-        "current_task": None,
-        "status": "",
-        "last_run": None
-    }
+    pointer = {"current_task": None, "status": "", "last_run": None}
 
     if not content:
         return pointer
@@ -220,10 +209,7 @@ def discover_enforcement_tools(scripts_dir: pathlib.Path) -> List[Dict[str, str]
             if not description:
                 description = f"Enforcement tool: {script_file.name}"
 
-            tools.append({
-                "name": script_file.name,
-                "description": description
-            })
+            tools.append({"name": script_file.name, "description": description})
         except Exception as e:
             print(f"WARN: Error reading tool {script_file.name}: {e}")
 
@@ -300,11 +286,7 @@ def parse_drift_vectors(content: str) -> List[Dict[str, str]]:
 
 def parse_layer_rules(content: str) -> Dict[str, any]:
     """Parse layer rules from LAYER_RULES.yaml"""
-    rules = {
-        "components": {},
-        "layers": [],
-        "rules": {}
-    }
+    rules = {"components": {}, "layers": [], "rules": {}}
 
     if not content:
         return rules
@@ -365,7 +347,9 @@ def generate_context_document(
     doc.append("- No action without explicit permission\n")
     doc.append("- If unsure, stop\n")
     doc.append("- AI may not modify governance\n")
-    doc.append("\n**Reference:** See `1_global_standards/AI_OPERATING_CONSTITUTION.md` for complete governance rules.\n")
+    doc.append(
+        "\n**Reference:** See `1_global_standards/AI_OPERATING_CONSTITUTION.md` for complete governance rules.\n"
+    )
     doc.append("\n---\n")
 
     # Current State Context
@@ -375,7 +359,9 @@ def generate_context_document(
     if active_plan.get("component"):
         doc.append(f"**Component:** {active_plan['component']}\n")
     if current_task:
-        doc.append(f"**Current Task:** {current_task.get('id')} - {current_task.get('name', 'N/A')}\n")
+        doc.append(
+            f"**Current Task:** {current_task.get('id')} - {current_task.get('name', 'N/A')}\n"
+        )
     elif current_task_id:
         doc.append(f"**Current Task:** {current_task_id}\n")
     doc.append(f"**Status:** {active_plan.get('status', 'unknown')}\n")
@@ -390,9 +376,13 @@ def generate_context_document(
                     next_task = active_plan["tasks"][idx + 1]
                 break
         if next_task:
-            doc.append(f"**Next Task:** {next_task.get('id')} - {next_task.get('name', 'N/A')}\n")
+            doc.append(
+                f"**Next Task:** {next_task.get('id')} - {next_task.get('name', 'N/A')}\n"
+            )
 
-    doc.append("\n**Blocking Issues:** None\n")  # TODO: Extract from feedback log if needed
+    doc.append(
+        "\n**Blocking Issues:** None\n"
+    )  # TODO: Extract from feedback log if needed
     doc.append("\n---\n")
 
     # Agentic Coordination
@@ -402,7 +392,9 @@ def generate_context_document(
     if decision_registry.get("open_decisions"):
         doc.append("### Open decisions (require explicit resolution)\n")
         for decision_id in decision_registry["open_decisions"]:
-            doc.append(f"- **{decision_id}**: status `proposed` — do not implement conflicting work\n")
+            doc.append(
+                f"- **{decision_id}**: status `proposed` — do not implement conflicting work\n"
+            )
         doc.append("\n")
 
     if decision_registry.get("forbidden_keywords"):
@@ -410,36 +402,56 @@ def generate_context_document(
         for keyword in decision_registry["forbidden_keywords"][:20]:
             doc.append(f"- `{keyword}`\n")
         if len(decision_registry["forbidden_keywords"]) > 20:
-            doc.append(f"- ... and {len(decision_registry['forbidden_keywords']) - 20} more\n")
+            doc.append(
+                f"- ... and {len(decision_registry['forbidden_keywords']) - 20} more\n"
+            )
         doc.append("\n")
 
     if drift_vectors:
         doc.append("### Named drift vectors\n")
         doc.append("**Reference:** `5_reference_architectures/DRIFT_VECTORS.yaml`\n\n")
         for vector in drift_vectors[:10]:
-            doc.append(f"- **{vector.get('id', 'N/A')}**: {vector.get('description', '')}\n")
+            doc.append(
+                f"- **{vector.get('id', 'N/A')}**: {vector.get('description', '')}\n"
+            )
         doc.append("\n")
 
     if agent_registry.get("agents"):
         doc.append("### Agent role graph\n")
         for agent in agent_registry["agents"]:
             tools = ", ".join(agent.get("tools") or [])
-            doc.append(f"- **{agent.get('id')}**: {agent.get('role', '')} — tools: [{tools}]\n")
-        doc.append("\n**Reference:** `5_reference_architectures/AGENT_REGISTRY.yaml`\n\n")
+            doc.append(
+                f"- **{agent.get('id')}**: {agent.get('role', '')} — tools: [{tools}]\n"
+            )
+        doc.append(
+            "\n**Reference:** `5_reference_architectures/AGENT_REGISTRY.yaml`\n\n"
+        )
         doc.append("**Session commands:**\n")
-        doc.append("- Session start: `python 3_bootstrap_scripts/agentic_session.py session-start`\n")
-        doc.append("- Pre-commit review: `python 3_bootstrap_scripts/agentic_session.py pre-commit-review`\n")
-        doc.append("- Graph playbook: `python 3_bootstrap_scripts/agentic_session.py graph playbook`\n")
+        doc.append(
+            "- Session start: `python 3_bootstrap_scripts/agentic_session.py session-start`\n"
+        )
+        doc.append(
+            "- Pre-commit review: `python 3_bootstrap_scripts/agentic_session.py pre-commit-review`\n"
+        )
+        doc.append(
+            "- Graph playbook: `python 3_bootstrap_scripts/agentic_session.py graph playbook`\n"
+        )
         doc.append("\n")
 
     doc.append("### Optional in-project tools\n")
-    doc.append("**Catalog:** `5_reference_architectures/OPTIONAL_AGENTIC_TOOLS.yaml`\n\n")
-    doc.append("Toggle via `python 3_bootstrap_scripts/cli.py agentic tools list|enable|disable|profile`.\n\n")
+    doc.append(
+        "**Catalog:** `5_reference_architectures/OPTIONAL_AGENTIC_TOOLS.yaml`\n\n"
+    )
+    doc.append(
+        "Toggle via `python 3_bootstrap_scripts/cli.py agentic tools list|enable|disable|profile`.\n\n"
+    )
     doc.append("| Tool | Purpose |\n|------|--------|\n")
     doc.append("| knowledge_index | Local BM25 RAG from KNOWLEDGE_SOURCES.yaml |\n")
     doc.append("| doc_lifecycle | PROJECT_STATUS.md, archive/deprecate workflow |\n")
     doc.append("| janitor | Session-start staleness refresh |\n")
-    doc.append("| governance_drift_validator | feature_flags vs AI_SANDBOX_RULES alignment |\n")
+    doc.append(
+        "| governance_drift_validator | feature_flags vs AI_SANDBOX_RULES alignment |\n"
+    )
     doc.append("| reference_validator | Unresolved imports and path literals |\n")
     doc.append("\n")
 
@@ -490,7 +502,9 @@ def generate_context_document(
     # Current Task Context
     doc.append("## Current Task Context\n")
     if current_task:
-        doc.append(f"**Task {current_task.get('id')}:** {current_task.get('name', 'N/A')}\n")
+        doc.append(
+            f"**Task {current_task.get('id')}:** {current_task.get('name', 'N/A')}\n"
+        )
         outputs = current_task.get("outputs", [])
         if outputs:
             doc.append("**Outputs:**\n")
@@ -524,14 +538,18 @@ def generate_context_document(
                     if may_import:
                         doc.append(f"  - May import: {', '.join(may_import)}\n")
                     if forbid_import:
-                        doc.append(f"  - Forbidden imports: {', '.join(forbid_import)}\n")
+                        doc.append(
+                            f"  - Forbidden imports: {', '.join(forbid_import)}\n"
+                        )
             doc.append("\n")
 
         if layer_rules.get("layers"):
             doc.append("### Layer Rules\n")
             for layer in layer_rules["layers"]:
                 if isinstance(layer, dict):
-                    doc.append(f"- **{layer.get('name', 'N/A')}**: {layer.get('may_import', [])}\n")
+                    doc.append(
+                        f"- **{layer.get('name', 'N/A')}**: {layer.get('may_import', [])}\n"
+                    )
             doc.append("\n")
 
         doc.append("**Reference:** `5_reference_architectures/LAYER_RULES.yaml`\n")
@@ -540,14 +558,30 @@ def generate_context_document(
     # Reference Documents
     doc.append("## Reference Documents\n")
     doc.append("For complete details, see:\n\n")
-    doc.append("1. **`1_global_standards/AI_OPERATING_CONSTITUTION.md`** - Governance and operating rules (MANDATORY)\n")
-    doc.append("2. **`0_phase0_bootstrap/AI_SANDBOX_RULES.md`** - Sandbox execution rules\n")
-    doc.append("3. **`0_phase0_bootstrap/feature_flags.yml`** - Feature flags and permissions\n")
-    doc.append("4. **`6_ai_runtime_context/ACTIVE_PLAN.yaml`** - Current plan and tasks\n")
-    doc.append("5. **`6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml`** - Current task pointer\n")
-    doc.append("6. **`5_reference_architectures/LAYER_RULES.yaml`** - Architecture boundaries\n")
-    doc.append("7. **`5_reference_architectures/DECISION_REGISTRY.yaml`** - Machine-checkable ADRs\n")
-    doc.append("8. **`5_reference_architectures/AGENT_REGISTRY.yaml`** - Agent role graph and tools\n")
+    doc.append(
+        "1. **`1_global_standards/AI_OPERATING_CONSTITUTION.md`** - Governance and operating rules (MANDATORY)\n"
+    )
+    doc.append(
+        "2. **`0_phase0_bootstrap/AI_SANDBOX_RULES.md`** - Sandbox execution rules\n"
+    )
+    doc.append(
+        "3. **`0_phase0_bootstrap/feature_flags.yml`** - Feature flags and permissions\n"
+    )
+    doc.append(
+        "4. **`6_ai_runtime_context/ACTIVE_PLAN.yaml`** - Current plan and tasks\n"
+    )
+    doc.append(
+        "5. **`6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml`** - Current task pointer\n"
+    )
+    doc.append(
+        "6. **`5_reference_architectures/LAYER_RULES.yaml`** - Architecture boundaries\n"
+    )
+    doc.append(
+        "7. **`5_reference_architectures/DECISION_REGISTRY.yaml`** - Machine-checkable ADRs\n"
+    )
+    doc.append(
+        "8. **`5_reference_architectures/AGENT_REGISTRY.yaml`** - Agent role graph and tools\n"
+    )
     doc.append("9. **`1_global_standards/`** - Code standards (TDD, SOLID, etc.)\n")
     doc.append("\n---\n")
 
@@ -555,9 +589,15 @@ def generate_context_document(
     doc.append("## Auto-Advance Protocol\n")
     doc.append("**State transitions are governed by the Auto-Advance Protocol:**\n\n")
     doc.append("1. **Task Completion Gate** must pass (all 6 gates validated)\n")
-    doc.append("2. **Completion Report** generated at `6_ai_runtime_context/TASK_COMPLETION_REPORTS/task_<id>.md`\n")
-    doc.append("3. **State Transition** logged to `6_ai_runtime_context/state_transition_log.jsonl`\n")
-    doc.append("4. **Pointer Updated** via `auto_advance_state.py` (increments by exactly +1)\n\n")
+    doc.append(
+        "2. **Completion Report** generated at `6_ai_runtime_context/TASK_COMPLETION_REPORTS/task_<id>.md`\n"
+    )
+    doc.append(
+        "3. **State Transition** logged to `6_ai_runtime_context/state_transition_log.jsonl`\n"
+    )
+    doc.append(
+        "4. **Pointer Updated** via `auto_advance_state.py` (increments by exactly +1)\n\n"
+    )
     doc.append("**To advance state:**\n")
     doc.append("```bash\n")
     doc.append("python3 3_bootstrap_scripts/auto_advance_state.py\n")
@@ -573,7 +613,9 @@ def generate_context_document(
     doc.append("2. Reference authoritative documents for complete details\n")
     doc.append("3. Use enforcement tools listed above for validation\n")
     doc.append("4. Regenerate if state/flags change during session\n")
-    doc.append("5. Use `auto_advance_state.py` to advance task state (never edit pointer directly)\n")
+    doc.append(
+        "5. Use `auto_advance_state.py` to advance task state (never edit pointer directly)\n"
+    )
     doc.append("\n")
     doc.append("**For Human Operators:**\n")
     doc.append("- Auto-regenerates on state/flag changes\n")
@@ -605,14 +647,18 @@ def main() -> int:
     active_plan_path = root / "6_ai_runtime_context" / "ACTIVE_PLAN.yaml"
     task_pointer_path = root / "6_ai_runtime_context" / "ACTIVE_TASK_POINTER.yaml"
     layer_rules_path = root / "5_reference_architectures" / "LAYER_RULES.yaml"
-    decision_registry_path = root / "5_reference_architectures" / "DECISION_REGISTRY.yaml"
+    decision_registry_path = (
+        root / "5_reference_architectures" / "DECISION_REGISTRY.yaml"
+    )
     agent_registry_path = root / "5_reference_architectures" / "AGENT_REGISTRY.yaml"
     drift_vectors_path = root / "5_reference_architectures" / "DRIFT_VECTORS.yaml"
     scripts_dir = root / "3_bootstrap_scripts"
-    
+
     # Verify constitution file exists (required for governance)
     if not constitution_path.exists():
-        print("ERROR: AI_OPERATING_CONSTITUTION.md not found at 1_global_standards/AI_OPERATING_CONSTITUTION.md")
+        print(
+            "ERROR: AI_OPERATING_CONSTITUTION.md not found at 1_global_standards/AI_OPERATING_CONSTITUTION.md"
+        )
         print("This file is required for governance installation.")
         return 1
 
@@ -625,7 +671,9 @@ def main() -> int:
     active_plan_content = read_file(active_plan_path, "ACTIVE_PLAN.yaml")
     task_pointer_content = read_file(task_pointer_path, "ACTIVE_TASK_POINTER.yaml")
     layer_rules_content = read_file(layer_rules_path, "LAYER_RULES.yaml")
-    decision_registry_content = read_file(decision_registry_path, "DECISION_REGISTRY.yaml")
+    decision_registry_content = read_file(
+        decision_registry_path, "DECISION_REGISTRY.yaml"
+    )
     agent_registry_content = read_file(agent_registry_path, "AGENT_REGISTRY.yaml")
     drift_vectors_content = read_file(drift_vectors_path, "DRIFT_VECTORS.yaml")
 

@@ -22,6 +22,7 @@ except ImportError:
 ROOT = pathlib.Path(".").resolve()
 GATES = ROOT / "NEEDS-ANDY" / "GATES.yaml"
 
+
 # Heuristics: gate id → (description, callable returning True if violation)
 def _diff_names() -> set[str]:
     try:
@@ -47,7 +48,9 @@ def _diff_names() -> set[str]:
 
 def _tags() -> set[str]:
     try:
-        out = subprocess.check_output(["git", "tag", "--list", "v4.0.0"], text=True, cwd=ROOT)
+        out = subprocess.check_output(
+            ["git", "tag", "--list", "v4.0.0"], text=True, cwd=ROOT
+        )
         return {t.strip() for t in out.splitlines() if t.strip()}
     except Exception:
         return set()
@@ -77,7 +80,9 @@ def check_na_15(_changed):
 def check_na_16(changed):
     # Deletion of pre-commit or bootstrap shell scripts
     for p in changed:
-        if p in (".pre-commit-config.yaml",) or re.search(r"3_bootstrap_scripts/.+\.sh$", p):
+        if p in (".pre-commit-config.yaml",) or re.search(
+            r"3_bootstrap_scripts/.+\.sh$", p
+        ):
             full = ROOT / p
             if not full.exists():
                 return f"deleted while NA-16 blocked: {p}"

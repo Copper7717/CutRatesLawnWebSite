@@ -23,9 +23,15 @@ SCAN_GLOBS = [
 
 # Patterns that re-introduce single-stack lock-in into the *neutral* surface
 BANNED = [
-    (re.compile(r"python3\s+3_bootstrap_scripts/", re.I), "hardcoded python3 bootstrap path"),
+    (
+        re.compile(r"python3\s+3_bootstrap_scripts/", re.I),
+        "hardcoded python3 bootstrap path",
+    ),
     (re.compile(r"\bbash\s+scripts/", re.I), "bash-only script invocation"),
-    (re.compile(r"pre-commit\s+run", re.I), "pre-commit-only validate binding in protocol doc"),
+    (
+        re.compile(r"pre-commit\s+run", re.I),
+        "pre-commit-only validate binding in protocol doc",
+    ),
 ]
 
 

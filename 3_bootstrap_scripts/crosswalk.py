@@ -161,16 +161,24 @@ def run_crosswalk(
         print("[crosswalk] hub unreachable (exit 4)", file=sys.stderr)
         return 4
 
-    print(f"[crosswalk] OK adapter={target} (subsumed init+check-updates+apply-updates)")
+    print(
+        f"[crosswalk] OK adapter={target} (subsumed init+check-updates+apply-updates)"
+    )
     return 0
 
 
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--adapter", help="Force adapter id (default: detect or generic)")
+    parser.add_argument(
+        "--adapter", help="Force adapter id (default: detect or generic)"
+    )
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--offline", action="store_true", help="Skip hub reachability check")
-    parser.add_argument("--force", action="store_true", help="Re-run even if already onboarded")
+    parser.add_argument(
+        "--offline", action="store_true", help="Skip hub reachability check"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Re-run even if already onboarded"
+    )
     parser.add_argument(
         "--root",
         default=".",

@@ -68,7 +68,9 @@ def migrate_to_2_2_0(project_root: pathlib.Path) -> Tuple[bool, str]:
 
     generate_script = project_root / "3_bootstrap_scripts" / "generate_ai_context.py"
     if generate_script.exists():
-        subprocess.run([sys.executable, str(generate_script)], cwd=str(project_root), check=False)
+        subprocess.run(
+            [sys.executable, str(generate_script)], cwd=str(project_root), check=False
+        )
         notes.append("AI_CONTEXT.md regenerated with content fingerprint")
 
     version_file = project_root / "0_phase0_bootstrap" / "META_FRAMEWORK_VERSION.yaml"

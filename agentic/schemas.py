@@ -33,7 +33,9 @@ class GraphRunRecord(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     finished_at: Optional[datetime] = None
     agents: list[AgentRunRecord] = Field(default_factory=list)
-    outcome: Literal["clean", "findings", "needs_decision", "escalated", "fail"] = "fail"
+    outcome: Literal["clean", "findings", "needs_decision", "escalated", "fail"] = (
+        "fail"
+    )
 
 
 class DecisionRow(BaseModel):

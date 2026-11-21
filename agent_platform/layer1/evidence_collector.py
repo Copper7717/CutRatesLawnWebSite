@@ -6,7 +6,12 @@ import hashlib
 import pathlib
 import uuid
 
-from agent_platform.models import EvidenceBundle, EvidenceItem, Provenance, RepositoryProfile
+from agent_platform.models import (
+    EvidenceBundle,
+    EvidenceItem,
+    Provenance,
+    RepositoryProfile,
+)
 from agent_platform.security import norm_path, should_skip_dir
 
 EVIDENCE_KINDS = {
@@ -20,7 +25,12 @@ EVIDENCE_KINDS = {
 
 def _kind_for(path: str) -> str:
     fwd = norm_path(path)
-    if "/tests/" in fwd or fwd.startswith("tests/") or "_test." in fwd or ".test." in fwd:
+    if (
+        "/tests/" in fwd
+        or fwd.startswith("tests/")
+        or "_test." in fwd
+        or ".test." in fwd
+    ):
         return "test"
     suffix = pathlib.Path(path).suffix.lower()
     if suffix == ".schema.json" or "/7_schemas/" in fwd:
@@ -31,7 +41,9 @@ def _kind_for(path: str) -> str:
     return "file"
 
 
-def collect_evidence(profile: RepositoryProfile, root: pathlib.Path, max_items: int = 500) -> EvidenceBundle:
+def collect_evidence(
+    profile: RepositoryProfile, root: pathlib.Path, max_items: int = 500
+) -> EvidenceBundle:
     root = root.resolve()
     items: list[EvidenceItem] = []
     priority_dirs = [

@@ -53,7 +53,9 @@ def append_agent_run(
             break
 
     if target is None:
-        target = GraphRunRecord(run_id=run_id, plan_id=plan_id, phase_id=phase_id).model_dump(mode="json")
+        target = GraphRunRecord(
+            run_id=run_id, plan_id=plan_id, phase_id=phase_id
+        ).model_dump(mode="json")
         runs.append(target)
 
     agents = target.setdefault("agents", [])
@@ -80,7 +82,9 @@ def finalize_run(
     for run in data.get("runs", []):
         if run.get("run_id") == run_id:
             run["outcome"] = outcome
-            run["finished_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            run["finished_at"] = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
             break
     with open(log_path, "w", encoding="utf-8") as handle:
         yaml.safe_dump(data, handle, sort_keys=False, allow_unicode=True)

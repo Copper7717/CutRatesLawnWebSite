@@ -44,7 +44,10 @@ def _load_schema(path: pathlib.Path) -> dict:
 
 def _schema_errors(schema: dict, instance: dict) -> list[str]:
     validator = jsonschema.Draft7Validator(schema)
-    return [e.message for e in sorted(validator.iter_errors(instance), key=lambda e: list(e.path))]
+    return [
+        e.message
+        for e in sorted(validator.iter_errors(instance), key=lambda e: list(e.path))
+    ]
 
 
 def compare_registry_lock(registry_modules: list, lock_modules: list) -> list[str]:
@@ -54,7 +57,9 @@ def compare_registry_lock(registry_modules: list, lock_modules: list) -> list[st
 
     for mid in sorted(set(reg_by_id) | set(lock_by_id)):
         if mid not in reg_by_id:
-            errors.append(f"lock has module '{mid}' not present in MODULE_REGISTRY.yaml")
+            errors.append(
+                f"lock has module '{mid}' not present in MODULE_REGISTRY.yaml"
+            )
             continue
         if mid not in lock_by_id:
             errors.append(f"registry has module '{mid}' not present in MODULES.lock")
@@ -109,10 +114,7 @@ def main() -> int:
             print(f"  - {err}")
         return 1
 
-    print(
-        f"[module-registry] OK: {len(modules)} module(s) "
-        f"registry↔lock agree"
-    )
+    print(f"[module-registry] OK: {len(modules)} module(s) " f"registry↔lock agree")
     return 0
 
 

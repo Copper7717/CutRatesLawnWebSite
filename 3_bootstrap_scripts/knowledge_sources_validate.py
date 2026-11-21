@@ -68,7 +68,8 @@ def main() -> int:
         return 1
 
     enabled = sum(
-        1 for s in (data.get("sources") or [])
+        1
+        for s in (data.get("sources") or [])
         if isinstance(s, dict) and s.get("enabled") is not False
     )
     print(f"[knowledge-sources] OK: {enabled} enabled source(s)")

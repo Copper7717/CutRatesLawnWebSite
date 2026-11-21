@@ -88,9 +88,7 @@ def cmd_checkpoint(_args: argparse.Namespace) -> int:
     plan_id = str(plan.get("plan_id", "proposal-system-mvp"))
     component = str(plan.get("component", "frontend"))
     name = _task_name(plan, task_id)
-    print(
-        f"plan:{plan_id} component:{component} task:{task_id} checkpoint: {name}"
-    )
+    print(f"plan:{plan_id} component:{component} task:{task_id} checkpoint: {name}")
     return 0
 
 
@@ -103,10 +101,14 @@ def cmd_verify(_args: argparse.Namespace) -> int:
         return 1
     # Template / fleet ratchet branches are not feature-task branches.
     if branch.startswith("ratchet-") or branch.startswith("wave0-ratchet"):
-        print(f"[task-workflow] OK: ratchet branch '{branch}' exempt from task alignment")
+        print(
+            f"[task-workflow] OK: ratchet branch '{branch}' exempt from task alignment"
+        )
         return 0
     if f"task-{task_id}" not in branch:
-        print(f"[task-workflow] ERROR: branch '{branch}' does not match current task {task_id}.")
+        print(
+            f"[task-workflow] ERROR: branch '{branch}' does not match current task {task_id}."
+        )
         return 1
     print(f"[task-workflow] OK: branch '{branch}' aligned to task {task_id}")
     return 0

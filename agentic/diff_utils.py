@@ -48,7 +48,11 @@ def extract_added_lines(diff_text: str, *, exclude_catalog_paths: bool = True) -
             continue
         if not line.startswith("+") or line.startswith("+++"):
             continue
-        if exclude_catalog_paths and current_file and is_guardrail_catalog_path(current_file):
+        if (
+            exclude_catalog_paths
+            and current_file
+            and is_guardrail_catalog_path(current_file)
+        ):
             continue
         added.append(line[1:])
 

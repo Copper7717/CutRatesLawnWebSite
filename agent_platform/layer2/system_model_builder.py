@@ -26,22 +26,46 @@ def build_system_model(
     for rel in profile.child_owned_paths:
         architecture_nodes.append({"type": "child_owned", "path": rel})
 
-    capability_registry = root / "5_reference_architectures" / "CAPABILITY_REGISTRY.yaml"
+    capability_registry = (
+        root / "5_reference_architectures" / "CAPABILITY_REGISTRY.yaml"
+    )
     evaluator_registry = root / "5_reference_architectures" / "EVALUATOR_REGISTRY.yaml"
     platform_pkg = root / "agent_platform"
 
     if capability_registry.exists():
-        feature_nodes.append({"id": "capability_registry", "path": norm_path(str(capability_registry.relative_to(root)))})
+        feature_nodes.append(
+            {
+                "id": "capability_registry",
+                "path": norm_path(str(capability_registry.relative_to(root))),
+            }
+        )
     else:
-        disconnects.append({"kind": "missing_registry", "path": "5_reference_architectures/CAPABILITY_REGISTRY.yaml"})
+        disconnects.append(
+            {
+                "kind": "missing_registry",
+                "path": "5_reference_architectures/CAPABILITY_REGISTRY.yaml",
+            }
+        )
 
     if evaluator_registry.exists():
-        feature_nodes.append({"id": "evaluator_registry", "path": norm_path(str(evaluator_registry.relative_to(root)))})
+        feature_nodes.append(
+            {
+                "id": "evaluator_registry",
+                "path": norm_path(str(evaluator_registry.relative_to(root))),
+            }
+        )
     else:
-        disconnects.append({"kind": "missing_registry", "path": "5_reference_architectures/EVALUATOR_REGISTRY.yaml"})
+        disconnects.append(
+            {
+                "kind": "missing_registry",
+                "path": "5_reference_architectures/EVALUATOR_REGISTRY.yaml",
+            }
+        )
 
     if not platform_pkg.is_dir():
-        disconnects.append({"kind": "missing_implementation", "path": "agent_platform/"})
+        disconnects.append(
+            {"kind": "missing_implementation", "path": "agent_platform/"}
+        )
 
     cli_path = root / "3_bootstrap_scripts" / "cli.py"
     if cli_path.exists():
@@ -50,7 +74,9 @@ def build_system_model(
             if cmd not in cli_text:
                 disconnects.append({"kind": "cli_not_wired", "command": cmd})
 
-    script_names = {norm_path(item.path) for item in evidence.items if item.kind == "script"}
+    script_names = {
+        norm_path(item.path) for item in evidence.items if item.kind == "script"
+    }
     declared_in_registry = {n["path"] for n in feature_nodes if "path" in n}
     for item in evidence.items:
         if item.path.endswith("_validate.py") and item.path not in script_names:
@@ -59,9 +85,19 @@ def build_system_model(
     # Check agentic coordination wiring
     agentic_validate = root / "3_bootstrap_scripts" / "agentic_coordinate_validate.py"
     if agentic_validate.exists():
-        feature_nodes.append({"id": "agentic_coordination", "path": "3_bootstrap_scripts/agentic_coordinate_validate.py"})
+        feature_nodes.append(
+            {
+                "id": "agentic_coordination",
+                "path": "3_bootstrap_scripts/agentic_coordinate_validate.py",
+            }
+        )
     else:
-        disconnects.append({"kind": "missing_validator", "path": "3_bootstrap_scripts/agentic_coordinate_validate.py"})
+        disconnects.append(
+            {
+                "kind": "missing_validator",
+                "path": "3_bootstrap_scripts/agentic_coordinate_validate.py",
+            }
+        )
 
     return SystemModel(
         model_id=str(uuid.uuid4()),

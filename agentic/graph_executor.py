@@ -118,7 +118,9 @@ def transition(outcome: str, path: pathlib.Path | None = None) -> dict[str, Any]
     return state
 
 
-def playbook(state: dict[str, Any] | None = None, root: pathlib.Path | None = None) -> str:
+def playbook(
+    state: dict[str, Any] | None = None, root: pathlib.Path | None = None
+) -> str:
     """Markdown instructions for the current graph node."""
     root = root or REPO_ROOT
     registry = load_agent_registry(root)

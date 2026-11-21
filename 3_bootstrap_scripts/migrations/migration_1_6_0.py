@@ -28,7 +28,9 @@ def migrate_to_1_6_0(project_root: pathlib.Path) -> Tuple[bool, str]:
     errors = []
 
     # 1. Ensure constitution file exists
-    constitution_path = project_root / "1_global_standards" / "AI_OPERATING_CONSTITUTION.md"
+    constitution_path = (
+        project_root / "1_global_standards" / "AI_OPERATING_CONSTITUTION.md"
+    )
     if not constitution_path.exists():
         errors.append(f"AI_OPERATING_CONSTITUTION.md missing at {constitution_path}")
         notes.append("WARN: Constitution file not found - may need manual installation")
@@ -46,7 +48,9 @@ def migrate_to_1_6_0(project_root: pathlib.Path) -> Tuple[bool, str]:
         notes.append("Intent declaration schema verified")
 
     # 3. Ensure intent declaration template exists (only if absent - protected)
-    intent_template_path = project_root / "6_ai_runtime_context" / "INTENT_DECLARATION.json"
+    intent_template_path = (
+        project_root / "6_ai_runtime_context" / "INTENT_DECLARATION.json"
+    )
     if not intent_template_path.exists():
         # Create runtime context directory if needed
         intent_template_path.parent.mkdir(parents=True, exist_ok=True)
@@ -62,16 +66,16 @@ def migrate_to_1_6_0(project_root: pathlib.Path) -> Tuple[bool, str]:
                 {
                     "path": "example/path/to/file.ext",
                     "change_type": "create",
-                    "notes": "Example change - replace with actual intent"
+                    "notes": "Example change - replace with actual intent",
                 }
             ],
             "expected_outputs": [],
             "permissions_checked": False,
             "state_files_read": [
                 "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml",
-                "6_ai_runtime_context/ACTIVE_PLAN.yaml"
+                "6_ai_runtime_context/ACTIVE_PLAN.yaml",
             ],
-            "notes": "This is a template. Replace with actual intent declaration before committing changes."
+            "notes": "This is a template. Replace with actual intent declaration before committing changes.",
         }
         try:
             with open(intent_template_path, "w", encoding="utf-8") as f:
@@ -88,35 +92,38 @@ def migrate_to_1_6_0(project_root: pathlib.Path) -> Tuple[bool, str]:
         try:
             with open(feature_flags_path, "r", encoding="utf-8") as f:
                 flags = yaml.safe_load(f) or {}
-            
+
             # Ensure ai_guardrails section exists
             if "ai_guardrails" not in flags:
                 flags["ai_guardrails"] = {}
-            
+
             # Enable intent declaration guardrail if not already set
             if "enforce_intent_declaration" not in flags["ai_guardrails"]:
                 flags["ai_guardrails"]["enforce_intent_declaration"] = True
                 notes.append("Enabled enforce_intent_declaration guardrail")
             else:
                 notes.append("Intent declaration guardrail already configured")
-            
+
             # Write back (only if we made changes)
             with open(feature_flags_path, "w", encoding="utf-8") as f:
                 yaml.dump(flags, f, default_flow_style=False, sort_keys=False)
         except Exception as e:
             errors.append(f"Failed to update feature flags: {e}")
     else:
-        notes.append("Feature flags file not found or YAML not available - manual update may be needed")
+        notes.append(
+            "Feature flags file not found or YAML not available - manual update may be needed"
+        )
 
     # 5. Regenerate AI_CONTEXT.md to include Governance section
     generate_script = project_root / "3_bootstrap_scripts" / "generate_ai_context.py"
     if generate_script.exists():
         import subprocess
+
         result = subprocess.run(
             ["python3", str(generate_script)],
             cwd=str(project_root),
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             notes.append("AI_CONTEXT.md regenerated with Governance section")
@@ -130,13 +137,15 @@ def migrate_to_1_6_0(project_root: pathlib.Path) -> Tuple[bool, str]:
     if precommit_path.exists():
         precommit_content = precommit_path.read_text(encoding="utf-8")
         if "check-governance-install" not in precommit_content:
-            notes.append("WARN: Pre-commit config may need manual update for governance check")
+            notes.append(
+                "WARN: Pre-commit config may need manual update for governance check"
+            )
         else:
             notes.append("Pre-commit config verified")
 
     if errors:
         return False, "; ".join(errors)
-    
+
     return True, "; ".join(notes)
 
 
@@ -154,4 +163,3 @@ def get_migration(version: str):
 def list_available_migrations() -> list[str]:
     """List all available migration versions."""
     return sorted(MIGRATIONS.keys())
-

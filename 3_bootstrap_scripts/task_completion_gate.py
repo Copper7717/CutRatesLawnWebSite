@@ -48,8 +48,7 @@ def get_staged_files() -> List[str]:
     """Get list of staged files"""
     try:
         output = subprocess.check_output(
-            ["git", "diff", "--cached", "--name-only"],
-            text=True
+            ["git", "diff", "--cached", "--name-only"], text=True
         )
         return [f.strip() for f in output.splitlines() if f.strip()]
     except subprocess.CalledProcessError:
@@ -59,10 +58,7 @@ def get_staged_files() -> List[str]:
 def get_working_tree_files() -> List[str]:
     """Get list of modified files in working tree"""
     try:
-        output = subprocess.check_output(
-            ["git", "diff", "--name-only"],
-            text=True
-        )
+        output = subprocess.check_output(["git", "diff", "--name-only"], text=True)
         return [f.strip() for f in output.splitlines() if f.strip()]
     except subprocess.CalledProcessError:
         return []
@@ -92,14 +88,17 @@ def check_gate_1_state_read_proof(intent: Dict) -> Tuple[bool, str]:
     """
     required_files = [
         "6_ai_runtime_context/ACTIVE_PLAN.yaml",
-        "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml"
+        "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml",
     ]
 
     state_files_read = intent.get("state_files_read", [])
     missing = [f for f in required_files if f not in state_files_read]
 
     if missing:
-        return False, f"GATE-1 FAILED: Missing state files in intent: {', '.join(missing)}"
+        return (
+            False,
+            f"GATE-1 FAILED: Missing state files in intent: {', '.join(missing)}",
+        )
     return True, "GATE-1 PASSED: All required state files read"
 
 
@@ -112,11 +111,16 @@ def check_gate_2_task_identity_match(intent: Dict, pointer: Dict) -> Tuple[bool,
     current_task_id = pointer.get("current_task")
 
     if str(intent_task_id) != str(current_task_id):
-        return False, f"GATE-2 FAILED: Task ID mismatch - Intent: {intent_task_id}, Current: {current_task_id}"
+        return (
+            False,
+            f"GATE-2 FAILED: Task ID mismatch - Intent: {intent_task_id}, Current: {current_task_id}",
+        )
     return True, f"GATE-2 PASSED: Task ID matches ({current_task_id})"
 
 
-def check_gate_3_outputs_present(plan: Dict, pointer: Dict, project_root: pathlib.Path) -> Tuple[bool, str, List[str]]:
+def check_gate_3_outputs_present(
+    plan: Dict, pointer: Dict, project_root: pathlib.Path
+) -> Tuple[bool, str, List[str]]:
     """
     GATE-3: Outputs Present
     Every output path from current task MUST exist.
@@ -124,7 +128,9 @@ def check_gate_3_outputs_present(plan: Dict, pointer: Dict, project_root: pathli
     """
     current_task_id = pointer.get("current_task")
     tasks = plan.get("tasks", [])
-    current_task = next((t for t in tasks if str(t.get("id")) == str(current_task_id)), None)
+    current_task = next(
+        (t for t in tasks if str(t.get("id")) == str(current_task_id)), None
+    )
 
     if not current_task:
         return False, f"GATE-3 FAILED: Task {current_task_id} not found in plan", []
@@ -148,7 +154,7 @@ def check_gate_4_scope_compliance(
     pointer: Dict,
     staged_files: List[str],
     feature_flags: Dict,
-    project_root: pathlib.Path
+    project_root: pathlib.Path,
 ) -> Tuple[bool, str, List[str]]:
     """
     GATE-4: Scope Compliance (Strict Mode)
@@ -157,7 +163,9 @@ def check_gate_4_scope_compliance(
     """
     current_task_id = pointer.get("current_task")
     tasks = plan.get("tasks", [])
-    current_task = next((t for t in tasks if str(t.get("id")) == str(current_task_id)), None)
+    current_task = next(
+        (t for t in tasks if str(t.get("id")) == str(current_task_id)), None
+    )
 
     if not current_task:
         return True, "GATE-4 SKIPPED: Task not found", []
@@ -177,7 +185,10 @@ def check_gate_4_scope_compliance(
         # INTENT_DECLARATION.json is a runtime file required by the system
         if file_path.startswith("6_ai_runtime_context/"):
             # Allow INTENT_DECLARATION.json and other runtime files
-            if "INTENT_DECLARATION.json" in file_path or "ACTIVE_TASK_POINTER.yaml" in file_path:
+            if (
+                "INTENT_DECLARATION.json" in file_path
+                or "ACTIVE_TASK_POINTER.yaml" in file_path
+            ):
                 continue
             # Allow completion reports
             if "TASK_COMPLETION_REPORTS" in file_path:
@@ -185,20 +196,31 @@ def check_gate_4_scope_compliance(
             # Allow ACTIVE_PLAN.yaml if it's in expected outputs (it's both a state file and an output)
             if "ACTIVE_PLAN.yaml" in file_path:
                 # Check if it's in expected outputs
-                if any(path_matches_output(output, file_path) for output in expected_outputs):
+                if any(
+                    path_matches_output(output, file_path)
+                    for output in expected_outputs
+                ):
                     continue
             # Allow feedback log when listed in outputs
             if "ai_feedback_log.json" in file_path:
-                if any(path_matches_output(output, file_path) for output in expected_outputs):
+                if any(
+                    path_matches_output(output, file_path)
+                    for output in expected_outputs
+                ):
                     continue
             if "AI_CONTEXT.md" in file_path:
-                if any(path_matches_output(output, file_path) for output in expected_outputs):
+                if any(
+                    path_matches_output(output, file_path)
+                    for output in expected_outputs
+                ):
                     continue
         if file_path.startswith(".git/"):
             continue
 
         # Explicit task.outputs authorize the path (including repo-root artifacts).
-        matches_output = any(path_matches_output(output, file_path) for output in expected_outputs)
+        matches_output = any(
+            path_matches_output(output, file_path) for output in expected_outputs
+        )
         if matches_output:
             continue
 
@@ -208,22 +230,30 @@ def check_gate_4_scope_compliance(
         if in_elevated and matches_output:
             continue
         if not in_allowed:
-            violations.append({
-                "path": file_path,
-                "reason": f"Not in allowed write paths: {list(allowed_paths)}"
-            })
+            violations.append(
+                {
+                    "path": file_path,
+                    "reason": f"Not in allowed write paths: {list(allowed_paths)}",
+                }
+            )
             continue
 
         # Check if matches expected outputs (strict mode)
-        violations.append({
-            "path": file_path,
-            "reason": f"Not in task outputs: {expected_outputs}",
-            "expected_outputs": expected_outputs
-        })
+        violations.append(
+            {
+                "path": file_path,
+                "reason": f"Not in task outputs: {expected_outputs}",
+                "expected_outputs": expected_outputs,
+            }
+        )
 
     if violations:
         violation_paths = [v["path"] for v in violations]
-        return False, f"GATE-4 FAILED: {len(violations)} files outside task scope", violation_paths
+        return (
+            False,
+            f"GATE-4 FAILED: {len(violations)} files outside task scope",
+            violation_paths,
+        )
     return True, "GATE-4 PASSED: All files within task scope", []
 
 
@@ -245,10 +275,7 @@ def check_gate_5_precommit_proof() -> Tuple[bool, str]:
 
 
 def generate_completion_report(
-    task_id: int,
-    plan: Dict,
-    gate_results: List[Dict],
-    project_root: pathlib.Path
+    task_id: int, plan: Dict, gate_results: List[Dict], project_root: pathlib.Path
 ) -> Tuple[bool, pathlib.Path]:
     """
     GATE-6: Completion Artifact
@@ -389,13 +416,19 @@ def main() -> int:
         "tests/test_task_completion_gate_advance.py",
     )
     non_advance = [
-        f for f in staged_files
-        if not any(f.replace("\\", "/").startswith(p) or f.replace("\\", "/") == p for p in advance_only_prefixes)
+        f
+        for f in staged_files
+        if not any(
+            f.replace("\\", "/").startswith(p) or f.replace("\\", "/") == p
+            for p in advance_only_prefixes
+        )
     ]
     if not non_advance and any(
         f.replace("\\", "/").endswith("ACTIVE_TASK_POINTER.yaml") for f in staged_files
     ):
-        print("[gate] INFO: advance-only changeset (pointer/transition log); skipping output/scope gates")
+        print(
+            "[gate] INFO: advance-only changeset (pointer/transition log); skipping output/scope gates"
+        )
         return 0
 
     # Filter to code files only (exclude state files)
@@ -418,7 +451,13 @@ def main() -> int:
         if not passed:
             print(f"[gate] {message}")
     else:
-        gate_results.append({"gate": "GATE-1", "passed": False, "message": "INTENT_DECLARATION.json missing"})
+        gate_results.append(
+            {
+                "gate": "GATE-1",
+                "passed": False,
+                "message": "INTENT_DECLARATION.json missing",
+            }
+        )
         print("[gate] GATE-1 FAILED: INTENT_DECLARATION.json missing")
 
     # GATE-2: Task Identity Match
@@ -428,11 +467,19 @@ def main() -> int:
         if not passed:
             print(f"[gate] {message}")
     else:
-        gate_results.append({"gate": "GATE-2", "passed": False, "message": "INTENT_DECLARATION.json missing"})
+        gate_results.append(
+            {
+                "gate": "GATE-2",
+                "passed": False,
+                "message": "INTENT_DECLARATION.json missing",
+            }
+        )
 
     # GATE-3: Outputs Present
     passed, message, missing = check_gate_3_outputs_present(plan, pointer, project_root)
-    gate_results.append({"gate": "GATE-3", "passed": passed, "message": message, "missing": missing})
+    gate_results.append(
+        {"gate": "GATE-3", "passed": passed, "message": message, "missing": missing}
+    )
     if not passed:
         print(f"[gate] {message}")
         if missing:
@@ -441,8 +488,17 @@ def main() -> int:
                 print(f"  - {output}")
 
     # GATE-4: Scope Compliance
-    passed, message, violations = check_gate_4_scope_compliance(plan, pointer, staged_files, feature_flags, project_root)
-    gate_results.append({"gate": "GATE-4", "passed": passed, "message": message, "violations": violations})
+    passed, message, violations = check_gate_4_scope_compliance(
+        plan, pointer, staged_files, feature_flags, project_root
+    )
+    gate_results.append(
+        {
+            "gate": "GATE-4",
+            "passed": passed,
+            "message": message,
+            "violations": violations,
+        }
+    )
     if not passed:
         print(f"[gate] {message}")
         if violations:
@@ -452,7 +508,9 @@ def main() -> int:
             if len(violations) > 10:
                 print(f"  ... and {len(violations) - 10} more")
             print("[gate] Remediation:")
-            print("  1. Update ACTIVE_PLAN.yaml to include these paths in task.outputs (human action)")
+            print(
+                "  1. Update ACTIVE_PLAN.yaml to include these paths in task.outputs (human action)"
+            )
             print("  2. Remove violating files from staged changes")
             print("  3. Update INTENT_DECLARATION.json to match actual changes")
 
@@ -463,8 +521,16 @@ def main() -> int:
         print(f"[gate] {message}")
 
     # GATE-6: Generate Completion Report
-    success, report_path = generate_completion_report(current_task_id, plan, gate_results, project_root)
-    gate_results.append({"gate": "GATE-6", "passed": success, "message": f"Completion report: {report_path}"})
+    success, report_path = generate_completion_report(
+        current_task_id, plan, gate_results, project_root
+    )
+    gate_results.append(
+        {
+            "gate": "GATE-6",
+            "passed": success,
+            "message": f"Completion report: {report_path}",
+        }
+    )
     if not success:
         print(f"[gate] GATE-6 FAILED: Could not generate completion report")
 

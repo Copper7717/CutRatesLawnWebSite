@@ -34,7 +34,11 @@ def _exec_limits(registry: dict[str, Any]) -> Limits:
     )
 
 
-def run_tool(tool_name: str, extra_args: list[str] | None = None, root: pathlib.Path | None = None) -> int:
+def run_tool(
+    tool_name: str,
+    extra_args: list[str] | None = None,
+    root: pathlib.Path | None = None,
+) -> int:
     """Execute a tool declared in AGENT_REGISTRY.yaml."""
     root = root or REPO_ROOT
     registry = load_agent_registry(root)
@@ -55,7 +59,9 @@ def run_tool(tool_name: str, extra_args: list[str] | None = None, root: pathlib.
     if "script" in cfg:
         script = root / cfg["script"]
         cmd = [sys.executable, str(script), *extra_args]
-        result = run_guarded(cmd, cwd=root, limits=_exec_limits(registry), label=tool_name)
+        result = run_guarded(
+            cmd, cwd=root, limits=_exec_limits(registry), label=tool_name
+        )
         if result.stdout:
             sys.stdout.write(result.stdout)
         if result.stderr:

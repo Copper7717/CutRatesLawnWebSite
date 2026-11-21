@@ -16,7 +16,9 @@ def main() -> int:
     errors = validate_registry(REPO_ROOT)
     if not (REPO_ROOT / "agent_platform" / "orchestration" / "workflow.py").is_file():
         errors.append("orchestration workflow missing")
-    if not (REPO_ROOT / "5_reference_architectures" / "CAPABILITY_REGISTRY.yaml").is_file():
+    if not (
+        REPO_ROOT / "5_reference_architectures" / "CAPABILITY_REGISTRY.yaml"
+    ).is_file():
         errors.append("CAPABILITY_REGISTRY.yaml missing")
     if errors:
         print("[platform-validate] FAILED:")

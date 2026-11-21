@@ -60,7 +60,12 @@ def cmd_session_start(_: argparse.Namespace) -> int:
             [sys.executable, "3_bootstrap_scripts/generate_ai_context.py"],
             cwd=REPO_ROOT,
         )
-        _log_step(run_id, "context_regenerate", code == 0, "" if code == 0 else "context generation failed")
+        _log_step(
+            run_id,
+            "context_regenerate",
+            code == 0,
+            "" if code == 0 else "context generation failed",
+        )
 
     gate = subprocess.call(
         [sys.executable, "3_bootstrap_scripts/phase_gate.py", "--status"],
@@ -74,7 +79,9 @@ def cmd_session_start(_: argparse.Namespace) -> int:
 def cmd_pre_commit_review(_: argparse.Namespace) -> int:
     run_id = str(uuid.uuid4())
     code = run_reviewer_pipeline(REPO_ROOT)
-    _log_step(run_id, "reviewer", code == 0, "" if code == 0 else "reviewer pipeline failed")
+    _log_step(
+        run_id, "reviewer", code == 0, "" if code == 0 else "reviewer pipeline failed"
+    )
     finalize_run(run_id, "clean" if code == 0 else "findings")
     return code
 
@@ -97,7 +104,9 @@ def cmd_graph_playbook(_: argparse.Namespace) -> int:
 
 def cmd_graph_advance(args: argparse.Namespace) -> int:
     state = transition(args.outcome)
-    print(f"[graph] now at: {state.get('current_agent')} ({state.get('last_transition')})")
+    print(
+        f"[graph] now at: {state.get('current_agent')} ({state.get('last_transition')})"
+    )
     print(playbook(state))
     return 0
 
@@ -118,7 +127,10 @@ def main() -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("session-start", help="Regenerate context + print phase gate status")
-    sub.add_parser("pre-commit-review", help="Run resurrection + drift + phase gate on staged changes")
+    sub.add_parser(
+        "pre-commit-review",
+        help="Run resurrection + drift + phase gate on staged changes",
+    )
     sub.add_parser("validate", help="Run all agentic registry validators")
 
     tool_p = sub.add_parser("tool", help="Run a single AGENT_REGISTRY tool by name")

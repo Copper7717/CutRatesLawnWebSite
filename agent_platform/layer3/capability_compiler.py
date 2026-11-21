@@ -36,10 +36,14 @@ def compile_plan(
     root: pathlib.Path,
     classification: SemanticClassification | None = None,
 ) -> CompiledCapabilityPlan:
-    classification = classification or classify_repository(profile, model, evidence, root, goal=goal)
+    classification = classification or classify_repository(
+        profile, model, evidence, root, goal=goal
+    )
     caps = capability_by_id(root)
     goal_key = goal.split()[0].lower() if goal else "inspect"
-    requested = GOAL_CAPABILITY_MAP.get(goal_key, ["CAP.repo.scan", "CAP.validate.full"])
+    requested = GOAL_CAPABILITY_MAP.get(
+        goal_key, ["CAP.repo.scan", "CAP.validate.full"]
+    )
 
     selected: list[str] = []
     graph: list[dict[str, Any]] = []
@@ -58,7 +62,9 @@ def compile_plan(
             continue
         version = f"{cap_id}@{cap.get('version', '1.0.0')}"
         selected.append(version)
-        graph.append({"capability": cap_id, "implementation_ref": cap.get("implementation_ref")})
+        graph.append(
+            {"capability": cap_id, "implementation_ref": cap.get("implementation_ref")}
+        )
         evaluators.extend(cap.get("evaluators") or [])
         if cap.get("risk_level") in ("high", "critical"):
             approval_gates.append(cap_id)
@@ -77,7 +83,9 @@ def compile_plan(
         approval_gates=approval_gates,
         validators=["schema_validation", "reference_validation"],
         evaluators=sorted(set(evaluators)),
-        rollback_steps=["restore_backup_manifest"] if goal_key in ("apply", "upgrade") else [],
+        rollback_steps=(
+            ["restore_backup_manifest"] if goal_key in ("apply", "upgrade") else []
+        ),
         risk_score=risk_score,
         blast_radius=profile.initializer_owned_paths[:5],
         unresolved_requirements=unresolved,

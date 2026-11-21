@@ -36,7 +36,17 @@ PROTECTED_TOP_LEVEL = {
     ".github",
 }
 
-NO_MOVE_DIRS = PROTECTED_TOP_LEVEL | {"node_modules", ".git", ".next", "dist", "build", "out", ".venv", "venv", "__pycache__"}
+NO_MOVE_DIRS = PROTECTED_TOP_LEVEL | {
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "build",
+    "out",
+    ".venv",
+    "venv",
+    "__pycache__",
+}
 
 
 def _load_yaml(path: Path) -> dict:
@@ -49,8 +59,11 @@ def _load_yaml(path: Path) -> dict:
 
 def _dump_yaml(obj: dict, path: Path) -> None:
     import yaml  # type: ignore
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.dump(obj, sort_keys=False, default_flow_style=False), encoding="utf-8")
+    path.write_text(
+        yaml.dump(obj, sort_keys=False, default_flow_style=False), encoding="utf-8"
+    )
 
 
 def _is_git_repo(root: Path) -> bool:
@@ -59,7 +72,9 @@ def _is_git_repo(root: Path) -> bool:
 
 def _git_clean(root: Path) -> bool:
     try:
-        out = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(root), text=True)
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=str(root), text=True
+        )
         return out.strip() == ""
     except Exception:
         return False
@@ -69,6 +84,7 @@ def _detect_markers(root: Path) -> Dict[str, bool]:
     """
     Lightweight, generic structure detection. Avoid framework-specific deep logic.
     """
+
     def exists(p: str) -> bool:
         return (root / p).exists()
 
@@ -79,20 +95,29 @@ def _detect_markers(root: Path) -> Dict[str, bool]:
         "has_apps_dir": exists("apps"),
         "has_packages_dir": exists("packages"),
         "has_src_dir": exists("src"),
-        "has_nextjs_markers": exists("next.config.js") or exists("next.config.mjs") or exists("app") or exists("pages"),
+        "has_nextjs_markers": exists("next.config.js")
+        or exists("next.config.mjs")
+        or exists("app")
+        or exists("pages"),
         "has_node_root": exists("package.json"),
         "has_python_root": exists("pyproject.toml") or exists("requirements.txt"),
         "has_dotnet_root": any(root.glob("*.sln")),
     }
 
 
-def _suggest_component_roots(root: Path, markers: Dict[str, bool]) -> Dict[str, List[str]]:
+def _suggest_component_roots(
+    root: Path, markers: Dict[str, bool]
+) -> Dict[str, List[str]]:
     """
     Suggest component roots if PROJECT_LAYOUT.components is missing or empty.
     This is intentionally heuristic-based and should be treated as a suggestion.
     """
     # If template canonical exists, keep it.
-    if markers["has_frontend_dir"] or markers["has_backend_dir"] or markers["has_shared_dir"]:
+    if (
+        markers["has_frontend_dir"]
+        or markers["has_backend_dir"]
+        or markers["has_shared_dir"]
+    ):
         out: Dict[str, List[str]] = {}
         if markers["has_frontend_dir"]:
             out["frontend"] = ["frontend/"]
@@ -109,7 +134,9 @@ def _suggest_component_roots(root: Path, markers: Dict[str, bool]) -> Dict[str, 
         if (root / "apps" / "web").exists():
             out["frontend"] = ["apps/web/"]
         if (root / "apps" / "api").exists() or (root / "apps" / "backend").exists():
-            out["backend"] = ["apps/api/"] if (root / "apps" / "api").exists() else ["apps/backend/"]
+            out["backend"] = (
+                ["apps/api/"] if (root / "apps" / "api").exists() else ["apps/backend/"]
+            )
         if markers["has_packages_dir"] and (root / "packages" / "shared").exists():
             out["shared"] = ["packages/shared/"]
         return out or {"frontend": ["apps/web/"]}
@@ -129,7 +156,9 @@ def _suggest_component_roots(root: Path, markers: Dict[str, bool]) -> Dict[str, 
     return {}
 
 
-def _plan_moves_for_normalization(root: Path, component_dirs: Dict[str, List[str]]) -> List[dict]:
+def _plan_moves_for_normalization(
+    root: Path, component_dirs: Dict[str, List[str]]
+) -> List[dict]:
     """
     Build a list of safe move operations to normalize into template canonical dirs.
     Only supports moving top-level dirs into frontend/backend/shared.
@@ -152,7 +181,7 @@ def _plan_moves_for_normalization(root: Path, component_dirs: Dict[str, List[str
             if dnorm == f"{comp}/":
                 continue
             # Only allow moves of existing directories
-            src_dir = (root / dnorm.rstrip("/"))
+            src_dir = root / dnorm.rstrip("/")
             if not src_dir.exists() or not src_dir.is_dir():
                 continue
             # Block moving protected dirs
@@ -177,7 +206,9 @@ def _apply_move_dir(root: Path, src: str, dest: str, use_git: bool) -> Tuple[boo
 
     if use_git and _is_git_repo(root):
         try:
-            subprocess.check_call(["git", "mv", str(src_path), str(dest_path)], cwd=str(root))
+            subprocess.check_call(
+                ["git", "mv", str(src_path), str(dest_path)], cwd=str(root)
+            )
             return True, f"git mv {src} -> {dest}"
         except Exception as e:
             return False, f"git mv failed: {e}"
@@ -192,9 +223,17 @@ def _apply_move_dir(root: Path, src: str, dest: str, use_git: bool) -> Tuple[boo
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mvp", default="0_phase0_bootstrap/MVP_SPECIFICATION.yaml")
-    ap.add_argument("--out", default="6_ai_runtime_context/LAYOUT_REARRANGEMENT_PLAN.yaml")
-    ap.add_argument("--apply", action="store_true", help="Apply planned moves (Phase 2).")
-    ap.add_argument("--non_interactive", action="store_true", help="Never prompt; fail/skip instead.")
+    ap.add_argument(
+        "--out", default="6_ai_runtime_context/LAYOUT_REARRANGEMENT_PLAN.yaml"
+    )
+    ap.add_argument(
+        "--apply", action="store_true", help="Apply planned moves (Phase 2)."
+    )
+    ap.add_argument(
+        "--non_interactive",
+        action="store_true",
+        help="Never prompt; fail/skip instead.",
+    )
     args = ap.parse_args()
 
     root = Path(".").resolve()
@@ -205,14 +244,26 @@ def main() -> int:
     markers = _detect_markers(root)
 
     project_layout = mvp.get("PROJECT_LAYOUT", {}) if isinstance(mvp, dict) else {}
-    adaptation = project_layout.get("adaptation", {}) if isinstance(project_layout, dict) else {}
-    mode = adaptation.get("mode", "adopt_existing") if isinstance(adaptation, dict) else "adopt_existing"
-    auto_apply = bool(adaptation.get("auto_apply")) if isinstance(adaptation, dict) else False
+    adaptation = (
+        project_layout.get("adaptation", {}) if isinstance(project_layout, dict) else {}
+    )
+    mode = (
+        adaptation.get("mode", "adopt_existing")
+        if isinstance(adaptation, dict)
+        else "adopt_existing"
+    )
+    auto_apply = (
+        bool(adaptation.get("auto_apply")) if isinstance(adaptation, dict) else False
+    )
 
-    components_cfg = (project_layout.get("components") if isinstance(project_layout, dict) else None) or {}
+    components_cfg = (
+        project_layout.get("components") if isinstance(project_layout, dict) else None
+    ) or {}
     has_components_cfg = isinstance(components_cfg, dict) and bool(components_cfg)
 
-    suggested_components = _suggest_component_roots(root, markers) if not has_components_cfg else {}
+    suggested_components = (
+        _suggest_component_roots(root, markers) if not has_components_cfg else {}
+    )
 
     # Decide component_dirs used for planning normalization
     component_dirs: Dict[str, List[str]] = {}
@@ -226,12 +277,20 @@ def main() -> int:
     else:
         component_dirs = suggested_components
 
-    planned_ops = _plan_moves_for_normalization(root, component_dirs) if mode == "normalize_to_template" else []
+    planned_ops = (
+        _plan_moves_for_normalization(root, component_dirs)
+        if mode == "normalize_to_template"
+        else []
+    )
 
     plan = {
         "version": "1.0",
         "detected": {"markers": markers},
-        "decision": {"mode": mode, "auto_apply": auto_apply, "will_apply": bool(args.apply or auto_apply)},
+        "decision": {
+            "mode": mode,
+            "auto_apply": auto_apply,
+            "will_apply": bool(args.apply or auto_apply),
+        },
         "suggestions": {"project_layout_components": suggested_components},
         "operations": planned_ops,
         "safety": {
@@ -258,7 +317,11 @@ def main() -> int:
         # ok, but less safe
         pass
 
-    if plan["safety"]["requires_git_clean"] and _is_git_repo(root) and not _git_clean(root):
+    if (
+        plan["safety"]["requires_git_clean"]
+        and _is_git_repo(root)
+        and not _git_clean(root)
+    ):
         print("[layout] BLOCKING: git working tree not clean; refusing to apply moves.")
         return 2
 

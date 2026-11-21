@@ -15,7 +15,9 @@ import subprocess
 try:
     import yaml
 except ImportError:
-    print("[state-transition-check] ERROR: PyYAML required for state transition validation")
+    print(
+        "[state-transition-check] ERROR: PyYAML required for state transition validation"
+    )
     print("[state-transition-check] Install with: pip install PyYAML")
     sys.exit(1)
 
@@ -24,8 +26,7 @@ def get_staged_files() -> list[str]:
     """Get list of staged files"""
     try:
         output = subprocess.check_output(
-            ["git", "diff", "--cached", "--name-only"],
-            text=True
+            ["git", "diff", "--cached", "--name-only"], text=True
         )
         return [f.strip() for f in output.splitlines() if f.strip()]
     except subprocess.CalledProcessError:
@@ -36,8 +37,13 @@ def get_pointer_diff() -> tuple[dict, dict]:
     """Get old and new pointer values from git diff"""
     try:
         output = subprocess.check_output(
-            ["git", "diff", "--cached", "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml"],
-            text=True
+            [
+                "git",
+                "diff",
+                "--cached",
+                "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml",
+            ],
+            text=True,
         )
 
         old_pointer = {}
@@ -60,7 +66,12 @@ def get_pointer_diff() -> tuple[dict, dict]:
 
 def check_completion_report_exists(task_id: int, project_root: pathlib.Path) -> bool:
     """Check if completion report exists for task"""
-    report_path = project_root / "6_ai_runtime_context" / "TASK_COMPLETION_REPORTS" / f"task_{task_id}.md"
+    report_path = (
+        project_root
+        / "6_ai_runtime_context"
+        / "TASK_COMPLETION_REPORTS"
+        / f"task_{task_id}.md"
+    )
     return report_path.exists()
 
 
@@ -68,7 +79,12 @@ def get_pointer_plan_diff() -> tuple[str | None, str | None]:
     """Return (old_plan_id, new_plan_id) from staged pointer diff when present."""
     try:
         output = subprocess.check_output(
-            ["git", "diff", "--cached", "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml"],
+            [
+                "git",
+                "diff",
+                "--cached",
+                "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml",
+            ],
             text=True,
         )
         old_plan = None
@@ -107,9 +123,15 @@ def check_transition_logged(
                     continue
                 try:
                     event = json.loads(line)
-                    if event.get("from_task") != from_task or event.get("to_task") != to_task:
+                    if (
+                        event.get("from_task") != from_task
+                        or event.get("to_task") != to_task
+                    ):
                         continue
-                    if transition_type and event.get("transition_type") != transition_type:
+                    if (
+                        transition_type
+                        and event.get("transition_type") != transition_type
+                    ):
                         continue
                     return True
                 except json.JSONDecodeError:
@@ -153,7 +175,9 @@ def main() -> int:
 
     if "current_task" not in old_pointer or "current_task" not in new_pointer:
         # Couldn't parse diff, try loading current and checking git
-        print("[state-transition-check] WARN: Could not parse pointer diff, attempting alternative check")
+        print(
+            "[state-transition-check] WARN: Could not parse pointer diff, attempting alternative check"
+        )
 
         # Load current pointer
         if pointer_path.exists():
@@ -163,9 +187,15 @@ def main() -> int:
                     current_task = current_pointer.get("current_task")
 
                     # Check if completion report exists
-                    if current_task and not check_completion_report_exists(current_task, project_root):
-                        print(f"[state-transition-check] WARN: No completion report for task {current_task}")
-                        print("[state-transition-check] State transitions should use: python3 3_bootstrap_scripts/auto_advance_state.py")
+                    if current_task and not check_completion_report_exists(
+                        current_task, project_root
+                    ):
+                        print(
+                            f"[state-transition-check] WARN: No completion report for task {current_task}"
+                        )
+                        print(
+                            "[state-transition-check] State transitions should use: python3 3_bootstrap_scripts/auto_advance_state.py"
+                        )
             except Exception:
                 pass
 
@@ -205,12 +235,16 @@ def main() -> int:
     # Check 1: Completion report exists for from_task
     if not check_completion_report_exists(from_task, project_root):
         errors.append(f"Missing completion report for task {from_task}")
-        errors.append(f"  Expected: 6_ai_runtime_context/TASK_COMPLETION_REPORTS/task_{from_task}.md")
+        errors.append(
+            f"  Expected: 6_ai_runtime_context/TASK_COMPLETION_REPORTS/task_{from_task}.md"
+        )
 
     # Check 2: Transition was logged
     if not check_transition_logged(from_task, to_task, project_root):
         errors.append(f"Transition from task {from_task} to {to_task} not logged")
-        errors.append(f"  Expected entry in: 6_ai_runtime_context/state_transition_log.jsonl")
+        errors.append(
+            f"  Expected entry in: 6_ai_runtime_context/state_transition_log.jsonl"
+        )
 
     # Check 3: Validate task increment (must be +1)
     if to_task != from_task + 1:
@@ -223,11 +257,17 @@ def main() -> int:
             print(f"[state-transition-check] {error}")
         print("[state-transition-check]")
         print("[state-transition-check] Remediation:")
-        print("[state-transition-check]   Use: python3 3_bootstrap_scripts/auto_advance_state.py")
-        print("[state-transition-check]   Do NOT edit ACTIVE_TASK_POINTER.yaml directly")
+        print(
+            "[state-transition-check]   Use: python3 3_bootstrap_scripts/auto_advance_state.py"
+        )
+        print(
+            "[state-transition-check]   Do NOT edit ACTIVE_TASK_POINTER.yaml directly"
+        )
         return 1
 
-    print(f"[state-transition-check] ✅ State transition validated: task {from_task} -> {to_task}")
+    print(
+        f"[state-transition-check] ✅ State transition validated: task {from_task} -> {to_task}"
+    )
     return 0
 
 

@@ -128,7 +128,11 @@ def gather_status(root: pathlib.Path | None = None) -> ProjectStatus:
     plan = _load_yaml(PLAN_PATH)
     pointer = _load_yaml(POINTER_PATH)
     current = pointer.get("current_task")
-    test_modules = tuple(sorted(p.name for p in TESTS_DIR.glob("test_*.py"))) if TESTS_DIR.exists() else ()
+    test_modules = (
+        tuple(sorted(p.name for p in TESTS_DIR.glob("test_*.py")))
+        if TESTS_DIR.exists()
+        else ()
+    )
     return ProjectStatus(
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         git_head=_git_head(root),
@@ -146,7 +150,9 @@ def gather_status(root: pathlib.Path | None = None) -> ProjectStatus:
 
 
 def render_project_status(status: ProjectStatus) -> str:
-    backend_lines = "\n".join(f"- `{m}`" for m in status.backend_modules) or "- _(none yet)_"
+    backend_lines = (
+        "\n".join(f"- `{m}`" for m in status.backend_modules) or "- _(none yet)_"
+    )
     test_lines = "\n".join(f"- `{m}`" for m in status.test_modules) or "- _(none)_"
     done = ", ".join(str(t) for t in status.tasks_completed) or "none"
     return f"""# {status.project_name} — Project Status (Living Report)

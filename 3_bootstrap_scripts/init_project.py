@@ -37,7 +37,7 @@ def load_meta_framework():
         "feature_flags.yml",
         "AI_SANDBOX_RULES.md",
         "AI_EXECUTION_CONSTRAINTS.md",
-        "MVP_SPECIFICATION.yaml"
+        "MVP_SPECIFICATION.yaml",
     ]
 
     missing = []
@@ -111,10 +111,19 @@ def extract_write_paths_from_layout(mvp_spec):
 
     # Meta-framework directories that should be excluded (already in readonly)
     excluded = {
-        "0_phase0_bootstrap", "1_global_standards", "2_framework_templates",
-        "3_bootstrap_scripts", "4_docs_index", "5_reference_architectures",
-        "6_ai_runtime_context", "7_schemas", "8_ci", ".github", "ai_reports",
-        "scripts", "shared"  # scripts is for script files, shared is for shared types/utils
+        "0_phase0_bootstrap",
+        "1_global_standards",
+        "2_framework_templates",
+        "3_bootstrap_scripts",
+        "4_docs_index",
+        "5_reference_architectures",
+        "6_ai_runtime_context",
+        "7_schemas",
+        "8_ci",
+        ".github",
+        "ai_reports",
+        "scripts",
+        "shared",  # scripts is for script files, shared is for shared types/utils
     }
 
     def extract_paths(obj, prefix="", depth=0, max_depth=3):
@@ -185,6 +194,7 @@ def extract_component_directories(mvp_spec):
 
     Returns dict: {component_name: [dir_prefixes_with_trailing_slash]}
     """
+
     def norm_dir(d: str) -> str:
         d = str(d).strip().replace("\\", "/")
         if d in (".", "./"):
@@ -192,7 +202,9 @@ def extract_component_directories(mvp_spec):
         return d if d.endswith("/") else d + "/"
 
     project_layout = mvp_spec.get("PROJECT_LAYOUT", {})
-    comps = (project_layout.get("components") if isinstance(project_layout, dict) else None) or {}
+    comps = (
+        project_layout.get("components") if isinstance(project_layout, dict) else None
+    ) or {}
     component_dirs = {}
 
     if isinstance(comps, dict) and comps:
@@ -298,10 +310,14 @@ def update_feature_flags_from_mvp_spec(feature_flags, mvp_spec):
     if component_dirs:
         ff_components = feature_flags.setdefault("components", {})
         for comp_name, dirs in component_dirs.items():
-            if comp_name not in ff_components or not isinstance(ff_components.get(comp_name), dict):
+            if comp_name not in ff_components or not isinstance(
+                ff_components.get(comp_name), dict
+            ):
                 ff_components[comp_name] = {}
             ff_components[comp_name]["directories"] = dirs
-        print("   Updated components.*.directories from PROJECT_LAYOUT / MONOREPO_LAYOUT")
+        print(
+            "   Updated components.*.directories from PROJECT_LAYOUT / MONOREPO_LAYOUT"
+        )
 
     # Enforce 100% coverage for all components
     feature_flags = set_coverage_thresholds(feature_flags, mvp_spec)
@@ -314,7 +330,7 @@ def update_feature_flags_from_mvp_spec(feature_flags, mvp_spec):
     tech_to_components = {
         "frontend": "frontend",
         "backend": "backend",
-        "shared": "shared"
+        "shared": "shared",
     }
 
     for tech_key, component_name in tech_to_components.items():
@@ -329,7 +345,13 @@ def update_feature_flags_from_mvp_spec(feature_flags, mvp_spec):
     # Save updated feature flags
     feature_flags_path = pathlib.Path("0_phase0_bootstrap/feature_flags.yml")
     with open(feature_flags_path, "w") as f:
-        yaml.dump(feature_flags, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        yaml.dump(
+            feature_flags,
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+            allow_unicode=True,
+        )
 
     print("OK: Feature flags updated and saved.")
     return feature_flags
@@ -352,7 +374,9 @@ def detect_adapter_from_tech_stack(mvp_spec: dict) -> str:
     return "python"
 
 
-def write_stack_adapter_selection(mvp_spec: dict, force_adapter: Optional[str] = None) -> str:
+def write_stack_adapter_selection(
+    mvp_spec: dict, force_adapter: Optional[str] = None
+) -> str:
     """Write 0_phase0_bootstrap/stack_adapter.yaml for new children (NA-01 / DEC-0003)."""
     adapter = force_adapter or detect_adapter_from_tech_stack(mvp_spec)
     if adapter not in ("python", "node"):
@@ -377,7 +401,9 @@ def verify_sandbox_integrity(feature_flags):
     mvp_spec = feature_flags.get("_mvp_spec", {})  # Passed from context if available
 
     if mode.get("cursor_agent_mode") != "sandboxed":
-        print("WARN: Non-sandboxed mode detected - enable sandboxed for safe agent execution.")
+        print(
+            "WARN: Non-sandboxed mode detected - enable sandboxed for safe agent execution."
+        )
 
     if mode.get("modify_meta_framework") is True:
         print("ERROR: Meta framework modification disabled for L2.5. Set to false.")
@@ -399,8 +425,11 @@ def setup_environment():
     # Install Python dependencies
     if pathlib.Path("requirements.txt").exists():
         try:
-            subprocess.run(["pip", "install", "-r", "requirements.txt"],
-                         check=True, capture_output=True)
+            subprocess.run(
+                ["pip", "install", "-r", "requirements.txt"],
+                check=True,
+                capture_output=True,
+            )
         except subprocess.CalledProcessError:
             print("WARN: Failed to install Python dependencies (may need virtualenv)")
 
@@ -415,10 +444,14 @@ def setup_environment():
 
     # Install pre-commit
     try:
-        subprocess.run(["pip", "install", "pre-commit"], check=False, capture_output=True)
+        subprocess.run(
+            ["pip", "install", "pre-commit"], check=False, capture_output=True
+        )
     except:
         try:
-            subprocess.run(["pipx", "install", "pre-commit"], check=False, capture_output=True)
+            subprocess.run(
+                ["pipx", "install", "pre-commit"], check=False, capture_output=True
+            )
         except:
             print("WARN: Could not install pre-commit automatically")
 
@@ -433,7 +466,9 @@ def scaffold_structure_from_mvp_spec(mvp_spec):
         """Recursively create directories from nested structure"""
         if isinstance(path_obj, dict):
             for key, value in path_obj.items():
-                current_path = pathlib.Path(prefix, key) if prefix else pathlib.Path(key)
+                current_path = (
+                    pathlib.Path(prefix, key) if prefix else pathlib.Path(key)
+                )
                 if not current_path.exists():
                     current_path.mkdir(parents=True, exist_ok=True)
                     # Add .gitkeep to empty directories
@@ -491,15 +526,13 @@ def generate_active_plan(mvp_spec):
         yaml.dump(plan_template, f, default_flow_style=False, sort_keys=False)
 
     # Write ACTIVE_TASK_POINTER.yaml
-    task_pointer = {
-        "current_task": 1,
-        "status": "in_progress",
-        "last_run": None
-    }
+    task_pointer = {"current_task": 1, "status": "in_progress", "last_run": None}
     with open(runtime_dir / "ACTIVE_TASK_POINTER.yaml", "w") as f:
         yaml.dump(task_pointer, f, default_flow_style=False)
 
-    print(f"OK: Active plan initialized (plan_id: {plan_template.get('plan_id', 'unknown')})")
+    print(
+        f"OK: Active plan initialized (plan_id: {plan_template.get('plan_id', 'unknown')})"
+    )
 
 
 def init_ai_context():
@@ -516,7 +549,7 @@ def init_ai_context():
     if not (runtime_dir / "MEMORY_STATE.yaml").exists():
         memory_state = {
             "recent_plans": [],
-            "metrics": {"first_pass_commit_success_rate": 0}
+            "metrics": {"first_pass_commit_success_rate": 0},
         }
         with open(runtime_dir / "MEMORY_STATE.yaml", "w") as f:
             yaml.dump(memory_state, f, default_flow_style=False)
@@ -544,7 +577,7 @@ def init_ai_context():
         subprocess.run(
             ["python3", "3_bootstrap_scripts/generate_ai_context.py"],
             check=True,
-            capture_output=True
+            capture_output=True,
         )
         print("OK: AI context document generated.")
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -558,16 +591,18 @@ def install_hooks():
     try:
         # Import HookInstaller (lazy import to avoid circular dependencies)
         from install_hooks import HookInstaller
-        
+
         installer = HookInstaller()
         success, message = installer.install_hooks(force=False)
-        
+
         if success:
             print("OK: Pre-commit hooks installed.")
         else:
             # Handle various error cases with appropriate messages
             if "not found" in message.lower() or "not ready" in message.lower():
-                print("WARN: Pre-commit not available. Install with: pip install pre-commit")
+                print(
+                    "WARN: Pre-commit not available. Install with: pip install pre-commit"
+                )
                 print("   Then run: pre-commit install")
             else:
                 print(f"WARN: {message}")
@@ -577,7 +612,9 @@ def install_hooks():
             subprocess.run(["pre-commit", "install"], check=True, capture_output=True)
             print("OK: Pre-commit hooks installed.")
         except (subprocess.CalledProcessError, FileNotFoundError):
-            print("WARN: Pre-commit not available. Install with: pip install pre-commit")
+            print(
+                "WARN: Pre-commit not available. Install with: pip install pre-commit"
+            )
             print("   Then run: pre-commit install")
     except Exception as e:
         # Fallback on any unexpected error
@@ -593,7 +630,7 @@ def run_self_checks():
         "schema_enforcement.py",
         "architecture_check.py",
         "ai_behavior_validation.py",
-        "../scripts/meta_framework_drift_check.py"
+        "../scripts/meta_framework_drift_check.py",
     ]
 
     for script in checks:
@@ -601,9 +638,7 @@ def run_self_checks():
         if script_path.exists():
             try:
                 result = subprocess.run(
-                    ["python3", str(script_path)],
-                    capture_output=True,
-                    text=True
+                    ["python3", str(script_path)], capture_output=True, text=True
                 )
                 if result.returncode != 0:
                     print(f"WARN: {script} reported issues (non-blocking)")
@@ -629,7 +664,7 @@ def generate_init_report(feature_flags):
         "plan_id": plan.get("plan_id", "unknown"),
         "component": plan.get("component", "unknown"),
         "sandbox": feature_flags.get("mode", {}).get("cursor_agent_mode", "unknown"),
-        "result": "success"
+        "result": "success",
     }
 
     with open(reports_dir / "init_report.json", "w") as f:
@@ -739,6 +774,7 @@ def main():
     except Exception as e:
         print(f"\nERROR: Initialization failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

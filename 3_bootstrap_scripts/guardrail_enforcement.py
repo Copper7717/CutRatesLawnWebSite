@@ -22,7 +22,15 @@ except ImportError:
     # Fallback if standardized_feedback not available
     try:
         from feedback_logger import log_feedback
-        def report_guardrail_violation(guardrail_name, component="shared", files=None, context="", details="", requires_intervention=True):
+
+        def report_guardrail_violation(
+            guardrail_name,
+            component="shared",
+            files=None,
+            context="",
+            details="",
+            requires_intervention=True,
+        ):
             log_feedback(
                 issue=f"Guardrail violation: {guardrail_name} - {details}",
                 category="GUARDRAIL_VIOLATION",
@@ -30,18 +38,23 @@ except ImportError:
                 files=files,
                 requires_human_intervention=requires_intervention,
             )
+
         def report_feedback(feedback_type, **kwargs):
             log_feedback(
                 issue=kwargs.get("issue", "Unknown"),
                 category=feedback_type,
                 context=kwargs.get("context", ""),
                 files=kwargs.get("files"),
-                requires_human_intervention=kwargs.get("requires_human_intervention", False),
+                requires_human_intervention=kwargs.get(
+                    "requires_human_intervention", False
+                ),
             )
+
     except ImportError:
         # No feedback system available
         def report_guardrail_violation(*args, **kwargs):
             pass
+
         def report_feedback(*args, **kwargs):
             pass
 
@@ -72,8 +85,7 @@ def get_staged_files() -> List[str]:
     """Get list of staged files"""
     try:
         output = subprocess.check_output(
-            ["git", "diff", "--cached", "--name-only"],
-            text=True
+            ["git", "diff", "--cached", "--name-only"], text=True
         )
         return [f.strip() for f in output.splitlines() if f.strip()]
     except subprocess.CalledProcessError:
@@ -109,6 +121,7 @@ def _hub_gates_apply() -> bool:
     try:
         sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
         from governance_scope import hub_task_gates_apply
+
         return hub_task_gates_apply()
     except ImportError:
         return True
@@ -150,19 +163,26 @@ def enforce_task_scope(guardrails: dict, staged_files: List[str]) -> bool:
     current_task = next((t for t in tasks if t.get("id") == current_task_id), None)
 
     if not current_task:
-        print(f"[guardrail] enforce_task_scope: Task {current_task_id} not found, allowing")
+        print(
+            f"[guardrail] enforce_task_scope: Task {current_task_id} not found, allowing"
+        )
         return True
 
     expected_outputs = current_task.get("outputs", [])
     if not expected_outputs:
-        print(f"[guardrail] enforce_task_scope: Task {current_task_id} has no outputs, allowing")
+        print(
+            f"[guardrail] enforce_task_scope: Task {current_task_id} has no outputs, allowing"
+        )
         return True
 
     # Check if staged files match expected outputs
     violations = []
     for file_path in staged_files:
         norm_path = _normalize_path(file_path)
-        if allow_context and (is_context_allowlist_file(norm_path) or norm_path in ADVANCE_HYGIENE_ALLOWLIST):
+        if allow_context and (
+            is_context_allowlist_file(norm_path)
+            or norm_path in ADVANCE_HYGIENE_ALLOWLIST
+        ):
             continue
 
         # Check if file matches any expected output pattern
@@ -193,7 +213,9 @@ def enforce_task_scope(guardrails: dict, staged_files: List[str]) -> bool:
     return True
 
 
-def forbid_folder_creation_outside_scope(guardrails: dict, staged_files: List[str]) -> bool:
+def forbid_folder_creation_outside_scope(
+    guardrails: dict, staged_files: List[str]
+) -> bool:
     """
     Guardrail: forbid_folder_creation_outside_scope
     New directories validated against plan context; off-scope blocked.
@@ -224,9 +246,11 @@ def forbid_folder_creation_outside_scope(guardrails: dict, staged_files: List[st
         norm_path = _normalize_path(file_path)
 
         # Check if file is in allowed write paths
-        in_allowed = any(norm_path.startswith(_normalize_path(allowed).rstrip("/"))
-                         or norm_path.startswith(_normalize_path(allowed))
-                         for allowed in allowed_paths)
+        in_allowed = any(
+            norm_path.startswith(_normalize_path(allowed).rstrip("/"))
+            or norm_path.startswith(_normalize_path(allowed))
+            for allowed in allowed_paths
+        )
 
         if not in_allowed:
             # Allow root files
@@ -236,7 +260,9 @@ def forbid_folder_creation_outside_scope(guardrails: dict, staged_files: List[st
             violations.append(file_path)
 
     if violations:
-        print("[guardrail] forbid_folder_creation_outside_scope: Files outside allowed paths:")
+        print(
+            "[guardrail] forbid_folder_creation_outside_scope: Files outside allowed paths:"
+        )
         for v in violations:
             print(f"  - {v}")
         print(f"  Allowed paths: {list(allowed_paths)}")
@@ -264,13 +290,17 @@ def enforce_tdd_cycle(guardrails: dict, staged_files: List[str]) -> bool:
         if file_path.endswith(("_test.py", "test_.py")):
             return True
         # TypeScript/JavaScript test patterns
-        if file_path.endswith((".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".test.js", ".spec.js")):
+        if file_path.endswith(
+            (".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".test.js", ".spec.js")
+        ):
             return True
         return False
 
     def is_code_file(file_path: str) -> bool:
         """Check if file is a code file (not a test file)"""
-        return file_path.endswith((".py", ".ts", ".tsx", ".js", ".jsx")) and not is_test_file(file_path)
+        return file_path.endswith(
+            (".py", ".ts", ".tsx", ".js", ".jsx")
+        ) and not is_test_file(file_path)
 
     # Identify test files and code files
     test_files = [f for f in staged_files if is_test_file(f)]
@@ -283,8 +313,12 @@ def enforce_tdd_cycle(guardrails: dict, staged_files: List[str]) -> bool:
         for cf in code_files:
             print(f"  - {cf}")
         print("[guardrail] TDD requires: Red -> Green -> Refactor -> Document")
-        print("[guardrail] Please add/update test files for all code changes before committing.")
-        print("[guardrail] Test file patterns: *_test.py, test_*.py, *.test.ts, *.test.tsx, *.spec.ts, *.spec.tsx, files in test/ directories")
+        print(
+            "[guardrail] Please add/update test files for all code changes before committing."
+        )
+        print(
+            "[guardrail] Test file patterns: *_test.py, test_*.py, *.test.ts, *.test.tsx, *.spec.ts, *.spec.tsx, files in test/ directories"
+        )
         return False  # Block commit
 
     return True
@@ -305,7 +339,9 @@ def require_doc_sync(guardrails: dict, staged_files: List[str]) -> bool:
     if code_files:
         # Check if any doc files are also modified
         if not doc_files:
-            print("[guardrail] require_doc_sync: Code modified without documentation updates")
+            print(
+                "[guardrail] require_doc_sync: Code modified without documentation updates"
+            )
             print("  Modified code:", code_files)
             print("  Tip: Update documentation when code changes")
             # Warning only, not blocking
@@ -314,7 +350,9 @@ def require_doc_sync(guardrails: dict, staged_files: List[str]) -> bool:
     return True
 
 
-def require_commit_plan_tags(guardrails: dict, staged_files: Optional[List[str]] = None) -> bool:
+def require_commit_plan_tags(
+    guardrails: dict, staged_files: Optional[List[str]] = None
+) -> bool:
     """
     Guardrail: require_commit_plan_tags
     Pre-commit hook ensures each commit message contains a plan/task tag.
@@ -326,12 +364,16 @@ def require_commit_plan_tags(guardrails: dict, staged_files: Optional[List[str]]
         return True  # Not enabled
 
     if not _hub_gates_apply():
-        print("[guardrail] require_commit_plan_tags: spoke repo — hub plan tags skipped")
+        print(
+            "[guardrail] require_commit_plan_tags: spoke repo — hub plan tags skipped"
+        )
         return True
 
     staged = staged_files if staged_files is not None else get_staged_files()
     if not staged:
-        print("[guardrail] require_commit_plan_tags: no staged files; skipping (validate mode)")
+        print(
+            "[guardrail] require_commit_plan_tags: no staged files; skipping (validate mode)"
+        )
         return True
 
     # Check commit message
@@ -342,8 +384,7 @@ def require_commit_plan_tags(guardrails: dict, staged_files: Optional[List[str]]
         # Try to get from git
         try:
             msg = subprocess.check_output(
-                ["git", "log", "-1", "--pretty=%B"],
-                text=True
+                ["git", "log", "-1", "--pretty=%B"], text=True
             )
         except Exception:
             return True  # Can't validate, allow
@@ -352,12 +393,16 @@ def require_commit_plan_tags(guardrails: dict, staged_files: Optional[List[str]]
     # is not an authored commit message. Skip when it looks like merge leftover.
     lower = msg.lower()
     if "conflicts:" in lower or msg.lstrip().startswith("Merge "):
-        print("[guardrail] require_commit_plan_tags: stale/merge COMMIT_EDITMSG; skipping")
+        print(
+            "[guardrail] require_commit_plan_tags: stale/merge COMMIT_EDITMSG; skipping"
+        )
         return True
 
     # Check for plan/task tags
     if "plan:" not in msg.lower() and "task:" not in msg.lower():
-        print("[guardrail] require_commit_plan_tags: Commit message missing plan/task tags")
+        print(
+            "[guardrail] require_commit_plan_tags: Commit message missing plan/task tags"
+        )
         print("  Format: plan: <plan_id> | task: <task_id>")
         return False
 
@@ -374,24 +419,41 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
         return True  # Not enabled
 
     if not _hub_gates_apply():
-        print("[guardrail] enforce_intent_declaration: spoke repo — hub intent gate skipped")
+        print(
+            "[guardrail] enforce_intent_declaration: spoke repo — hub intent gate skipped"
+        )
         return True
 
     import json
 
     # Check if any staged files are in project code directories (not just docs)
-    project_code_dirs = ["frontend/", "backend/", "shared/", "apps/", "packages/", "scripts/"]
-    code_files = [f for f in staged_files if any(f.startswith(d) for d in project_code_dirs)]
+    project_code_dirs = [
+        "frontend/",
+        "backend/",
+        "shared/",
+        "apps/",
+        "packages/",
+        "scripts/",
+    ]
+    code_files = [
+        f for f in staged_files if any(f.startswith(d) for d in project_code_dirs)
+    ]
 
     # Also check for non-doc changes (exclude pure doc changes)
-    non_doc_files = [f for f in staged_files if not (f.endswith(".md") or "docs/" in f or "4_docs_index/" in f)]
+    non_doc_files = [
+        f
+        for f in staged_files
+        if not (f.endswith(".md") or "docs/" in f or "4_docs_index/" in f)
+    ]
 
     # Advance-only / context-only commits do not require a new intent
     if non_doc_files and all(
         is_context_allowlist_file(f) or _normalize_path(f) in ADVANCE_HYGIENE_ALLOWLIST
         for f in non_doc_files
     ):
-        print("[guardrail] enforce_intent_declaration: context/advance-only changeset; skipping")
+        print(
+            "[guardrail] enforce_intent_declaration: context/advance-only changeset; skipping"
+        )
         return True
 
     # If no code files changed, intent declaration not required
@@ -414,8 +476,12 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
         print("  - intended_changes: array of {path, change_type}")
         print("  - expected_outputs: from current task")
         print("  - permissions_checked: true")
-        print("  - state_files_read: must include ACTIVE_TASK_POINTER.yaml and ACTIVE_PLAN.yaml")
-        print("[guardrail] See 6_ai_runtime_context/INTENT_DECLARATION.json for template")
+        print(
+            "  - state_files_read: must include ACTIVE_TASK_POINTER.yaml and ACTIVE_PLAN.yaml"
+        )
+        print(
+            "[guardrail] See 6_ai_runtime_context/INTENT_DECLARATION.json for template"
+        )
         return False
 
     # Load and validate intent declaration
@@ -430,11 +496,23 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
         return False
 
     # Validate required fields
-    required_fields = ["intent_id", "timestamp", "actor", "plan_id", "component", "task_id",
-                      "intended_changes", "expected_outputs", "permissions_checked", "state_files_read"]
+    required_fields = [
+        "intent_id",
+        "timestamp",
+        "actor",
+        "plan_id",
+        "component",
+        "task_id",
+        "intended_changes",
+        "expected_outputs",
+        "permissions_checked",
+        "state_files_read",
+    ]
     missing_fields = [f for f in required_fields if f not in intent]
     if missing_fields:
-        print(f"[guardrail] BLOCKING: INTENT_DECLARATION.json missing required fields: {', '.join(missing_fields)}")
+        print(
+            f"[guardrail] BLOCKING: INTENT_DECLARATION.json missing required fields: {', '.join(missing_fields)}"
+        )
         return False
 
     # Validate task_id matches ACTIVE_TASK_POINTER
@@ -448,10 +526,14 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
             # Normalize task_id for comparison (handle int/string)
             intent_task_id = intent.get("task_id")
             if str(intent_task_id) != str(current_task_id):
-                print("[guardrail] BLOCKING: Intent task_id does not match ACTIVE_TASK_POINTER")
+                print(
+                    "[guardrail] BLOCKING: Intent task_id does not match ACTIVE_TASK_POINTER"
+                )
                 print(f"  Intent task_id: {intent_task_id}")
                 print(f"  Current task: {current_task_id}")
-                print("  Remediation: Update INTENT_DECLARATION.json task_id to match current task")
+                print(
+                    "  Remediation: Update INTENT_DECLARATION.json task_id to match current task"
+                )
                 return False
         except Exception as e:
             print(f"[guardrail] WARN: Failed to read ACTIVE_TASK_POINTER.yaml: {e}")
@@ -461,17 +543,21 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
     state_files_read = intent.get("state_files_read", [])
     required_state_files = [
         "6_ai_runtime_context/ACTIVE_TASK_POINTER.yaml",
-        "6_ai_runtime_context/ACTIVE_PLAN.yaml"
+        "6_ai_runtime_context/ACTIVE_PLAN.yaml",
     ]
     missing_state_files = [f for f in required_state_files if f not in state_files_read]
     if missing_state_files:
-        print(f"[guardrail] BLOCKING: Intent state_files_read missing required files: {', '.join(missing_state_files)}")
+        print(
+            f"[guardrail] BLOCKING: Intent state_files_read missing required files: {', '.join(missing_state_files)}"
+        )
         return False
 
     # Validate permissions_checked
     if not intent.get("permissions_checked", False):
         print("[guardrail] BLOCKING: Intent permissions_checked must be true")
-        print("  Remediation: Set permissions_checked: true after verifying permissions")
+        print(
+            "  Remediation: Set permissions_checked: true after verifying permissions"
+        )
         return False
 
     # Load active plan to get expected outputs
@@ -479,7 +565,9 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
     if plan:
         current_task_id = intent.get("task_id")
         tasks = plan.get("tasks", [])
-        current_task = next((t for t in tasks if str(t.get("id")) == str(current_task_id)), None)
+        current_task = next(
+            (t for t in tasks if str(t.get("id")) == str(current_task_id)), None
+        )
 
         if current_task:
             expected_outputs = current_task.get("outputs", [])
@@ -523,32 +611,42 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
                     continue
 
                 path_name = pathlib.Path(change_path).name
-                in_allowed = any(change_path.startswith(allowed) for allowed in allowed_paths)
+                in_allowed = any(
+                    change_path.startswith(allowed) for allowed in allowed_paths
+                )
                 if path_name in root_allow:
                     in_allowed = True
                 if not in_allowed:
-                    violations.append({
-                        "path": change_path,
-                        "reason": f"Path not in allowed write paths: {list(allowed_paths)}"
-                    })
+                    violations.append(
+                        {
+                            "path": change_path,
+                            "reason": f"Path not in allowed write paths: {list(allowed_paths)}",
+                        }
+                    )
                     continue
 
                 if not matches_expected:
-                    violations.append({
-                        "path": change_path,
-                        "reason": f"Path not in expected outputs for task {current_task_id}",
-                        "expected_outputs": expected_outputs
-                    })
+                    violations.append(
+                        {
+                            "path": change_path,
+                            "reason": f"Path not in expected outputs for task {current_task_id}",
+                            "expected_outputs": expected_outputs,
+                        }
+                    )
 
             if violations:
-                print("[guardrail] BLOCKING: Intent declaration contains paths outside task scope")
+                print(
+                    "[guardrail] BLOCKING: Intent declaration contains paths outside task scope"
+                )
                 print("  Violating paths:")
                 for v in violations:
                     print(f"    - {v['path']}: {v['reason']}")
                     if "expected_outputs" in v:
                         print(f"      Expected outputs: {v['expected_outputs']}")
                 print("  Remediation options:")
-                print("    1. Update ACTIVE_PLAN.yaml to include these paths in task.outputs (human action)")
+                print(
+                    "    1. Update ACTIVE_PLAN.yaml to include these paths in task.outputs (human action)"
+                )
                 print("    2. Remove violating files from staged changes")
                 print("    3. Update INTENT_DECLARATION.json to match actual changes")
                 return False
@@ -562,14 +660,22 @@ def enforce_intent_declaration(guardrails: dict, staged_files: List[str]) -> boo
     mismatches = []
     for staged in staged_files:
         # Skip if it's a subdirectory of an intended path
-        matches_intent = any(staged.startswith(intended) or intended.startswith(staged)
-                            for intended in intended_paths)
-        if not matches_intent and staged not in ["6_ai_runtime_context/INTENT_DECLARATION.json"]:
+        matches_intent = any(
+            staged.startswith(intended) or intended.startswith(staged)
+            for intended in intended_paths
+        )
+        if not matches_intent and staged not in [
+            "6_ai_runtime_context/INTENT_DECLARATION.json"
+        ]:
             # Allow intent declaration file itself
             mismatches.append(staged)
 
-    if mismatches and len(mismatches) > len(staged_files) * 0.5:  # More than 50% mismatch
-        print("[guardrail] WARN: Significant mismatch between staged files and intended changes")
+    if (
+        mismatches and len(mismatches) > len(staged_files) * 0.5
+    ):  # More than 50% mismatch
+        print(
+            "[guardrail] WARN: Significant mismatch between staged files and intended changes"
+        )
         print(f"  Mismatched files: {mismatches[:5]}...")  # Show first 5
         print("  This is a warning; intent declaration may need updating")
         # Warning only, don't block
@@ -627,13 +733,29 @@ def main():
 
     # Run all enabled guardrails
     results.append(("enforce_task_scope", enforce_task_scope(guardrails, staged_files)))
-    results.append(("forbid_folder_creation_outside_scope",
-                   forbid_folder_creation_outside_scope(guardrails, staged_files)))
+    results.append(
+        (
+            "forbid_folder_creation_outside_scope",
+            forbid_folder_creation_outside_scope(guardrails, staged_files),
+        )
+    )
     results.append(("enforce_tdd_cycle", enforce_tdd_cycle(guardrails, staged_files)))
     results.append(("require_doc_sync", require_doc_sync(guardrails, staged_files)))
-    results.append(("require_commit_plan_tags", require_commit_plan_tags(guardrails, staged_files)))
-    results.append(("enforce_intent_declaration", enforce_intent_declaration(guardrails, staged_files)))
-    results.append(("enforce_agentic_coordination", enforce_agentic_coordination(guardrails, staged_files)))
+    results.append(
+        ("require_commit_plan_tags", require_commit_plan_tags(guardrails, staged_files))
+    )
+    results.append(
+        (
+            "enforce_intent_declaration",
+            enforce_intent_declaration(guardrails, staged_files),
+        )
+    )
+    results.append(
+        (
+            "enforce_agentic_coordination",
+            enforce_agentic_coordination(guardrails, staged_files),
+        )
+    )
 
     # Check results
     failed = [name for name, passed in results if not passed]
